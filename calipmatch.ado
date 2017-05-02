@@ -1,4 +1,15 @@
 *! version 0.0.3  2may2017  Michael Stepner and Allan Garland, stepner@mit.edu
+
+/* CC0 license information:
+To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
+to this software to the public domain worldwide. This software is distributed without any warranty.
+
+This code is licensed under the CC0 1.0 Universal license.  The full legal text as well as a
+human-readable summary can be accessed at http://creativecommons.org/publicdomain/zero/1.0/
+*/
+
+* Why did I include a formal license? Jeff Atwood gives good reasons: https://blog.codinghorror.com/pick-a-license-any-license/
+
 program define calipmatch, sortpreserve rclass
 	version 13.0
 	syntax [if] [in], GENerate(name) CASEvar(varname) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
