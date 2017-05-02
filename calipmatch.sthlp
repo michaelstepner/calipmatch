@@ -1,7 +1,8 @@
 {smcl}
-{* *! version 0.0.1  27apr2017}{...}
+{* *! version 0.0.3  2may2017}{...}
 {viewerjumpto "Syntax" "calipmatch##syntax"}{...}
 {viewerjumpto "Description" "calipmatch##description"}{...}
+{viewerjumpto "Options" "calipmatch##options"}{...}
 {viewerjumpto "Saved results" "calipmatch##saved_results"}{...}
 {viewerjumpto "Authors" "calipmatch##author"}{...}
 {title:Title}
@@ -65,6 +66,53 @@ searches for matching controls until it either finds the pre-specified maximum n
 matches or runs out of controls. The search is performed greedily: it is possible that
 some cases end up unmatched because all possible matching controls have already been matched with
 another case.
+
+
+{marker options}{...}
+{title:Options}
+
+{dlgtab:Required}
+
+{phang}{opth gen:erate(newvar)} specifies a new variable to be generated,
+indicating groups of matched cases and controls. If {it:M} case observations
+were successfully matched to control observations, then this new variable
+will take values {1, ..., {it:M}}. Each of the matched case observations will
+be assigned a unique value. Each of the matched control observations
+will be assigned the same value as the case it is matched to.
+
+{phang}{opth case:var(varname)} specifies the binary variable that indicates whether
+each observation is a case (=1) or a control (=0). Observations with a
+missing value are excluded from matching.
+
+{phang}{opt max:matches(#)} sets the maximum number of controls to be matched
+with each case. Setting {opt maxmatches(1)} performs a 1:1 matching: {cmd:calipmatch}
+searches for one matching control observation for each case observation.
+
+{pmore}By setting {opt maxmatches(#)} greater than 1, {cmd:calipmatch} will proceed in
+random order through
+the cases and search for matching control observations until it either finds the
+maximum number of matches or runs out of controls. The search is performed greedily: it
+is possible that some cases end up unmatched because all possible matching
+controls have already been matched with another case.
+
+{phang}{opth caliperm:atch(varlist)} is a list of one or more numeric variables to
+use for caliper matching. Matched observations must have values within +/- the caliper
+width for every caliper matching variable listed.
+
+{phang}{opth caliperw:idth(numlist)} is a list of positive numbers to use as caliper
+widths. The widths are associated with caliper matching variables using the order they are
+listed in: the first number will be used as the width for the first caliper
+matching variable, etc.
+
+{dlgtab:Optional}
+
+{phang}{opth exactm:atch(varlist)} is a list of one or more integer-valued variables to use
+for exact matching. When specified, matched observations must not only match on the caliper
+matching variables, they must also have identical values for every exact matching variable.
+
+{pmore}Exact matching variables must have a {help data_types:data type} of {it:byte},
+{it:int} or {it:long}. This enables speedy exact matching, by ensuring that
+all values are stored as precise integers.
 
 
 {marker saved_results}{...}
