@@ -1,4 +1,4 @@
-*! version 0.0.2  1may2017  Michael Stepner and Allan Garland, stepner@mit.edu
+*! version 0.0.3  2may2017  Michael Stepner and Allan Garland, stepner@mit.edu
 program define calipmatch, sortpreserve rclass
 	version 13.0
 	syntax [if] [in], GENerate(name) CASEvar(varname) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
@@ -55,7 +55,16 @@ program define calipmatch, sortpreserve rclass
 	
 	* Find group boundaries
 	qui count if `touse'==1
-	mata: boundaries=find_group_boundaries("`exactmatch'", "`casevar'", `=_N-r(N)+1', `=_N')
+	local insample_total = r(N)
+	if (`insample_total'==0) {
+		di as error "no observations in sample"
+		exit 2000
+	}
+	
+	qui count if `casevar'==1 in `=_N-`insample_total'+1'/`=_N'
+	local cases_total = r(N)
+	
+	mata: boundaries=find_group_boundaries("`exactmatch'", "`casevar'", `=_N-`insample_total'+1', `=_N')
 	
 	* Perform matching within each group
 	qui gen long `generate'=.
@@ -65,10 +74,9 @@ program define calipmatch, sortpreserve rclass
 	qui compress `generate'
 	
 	* Print report on match rate
-	tempname case_matches cases_total
-	matrix `case_matches'=r(case_matches)
-	matrix `cases_total'=`case_matches''* J(rowsof(`case_matches'),1,1)
-	local cases_total = `cases_total'[1,1]
+	tempname case_matches
+	matrix `case_matches'=r(matchsuccess)
+	matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
 	local cases_matched = `cases_total'-`case_matches'[1,1]
 	local match_rate_print = string(`cases_matched'/`cases_total'*100,"%9.1f")
 
@@ -118,7 +126,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	curmatch = 0
 	
 	real colvector matchsuccess
-	matchsuccess = J(maxmatch+1, 1, 0)
+	matchsuccess = J(maxmatch, 1, 0)
 	
 	real scalar brow
 	real scalar caseobs
@@ -154,18 +162,19 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 			
 			}
 			
-			matchsuccess[casematchcount+1,1] = matchsuccess[casematchcount+1,1]+1
-			
 			if (casematchcount==0) {
 				curmatch--
 				_st_store(caseobs, matchgrp, .)
+			}
+			else {
+				matchsuccess[casematchcount,1] = matchsuccess[casematchcount,1]+1
 			}
 		
 		}
 	
 	}
 	
-	st_matrix("r(case_matches)",matchsuccess)
+	st_matrix("r(matchsuccess)",matchsuccess)
 
 }
 
