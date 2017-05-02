@@ -1,4 +1,4 @@
-*! version 0.0.1  27apr2017  Michael Stepner and Allan Garland, stepner@mit.edu
+*! version 0.0.2  1may2017  Michael Stepner and Allan Garland, stepner@mit.edu
 program define calipmatch, sortpreserve rclass
 	version 13.0
 	syntax [if] [in], GENerate(name) CASEvar(varname) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
@@ -181,15 +181,16 @@ real matrix find_group_boundaries(string scalar byvars, string scalar casevar, r
 	currow=1
 	
 	real rowvector groupvars
-	groupvars = st_varindex(tokens(byvars+" "+casevar))
+	groupvars = st_varindex(tokens(byvars))
+	
+	real scalar casevarnum
+	casevarnum = st_varindex(casevar)
 	
 	real scalar obs
 	for (obs=startobs+1; obs<=endobs; obs++) {
 		if (st_data(obs, groupvars)!=st_data(obs-1, groupvars)) {
 			if (nextcol==2) {
-				boundaries[currow,2]=obs-1
-				boundaries[currow,3]=obs
-				nextcol=4
+				boundaries[currow,1]=obs
 			}
 			else if (nextcol==4) {
 				boundaries[currow,4]=obs-1
@@ -198,11 +199,19 @@ real matrix find_group_boundaries(string scalar byvars, string scalar casevar, r
 				currow=currow+1
 			}
 		}
+		else if (_st_data(obs, casevarnum)!=_st_data(obs-1, casevarnum)) {
+			// XX mark error if nextcol!=2?
+			boundaries[currow,2]=obs-1
+			boundaries[currow,3]=obs
+			nextcol=4
+		}
 	}
 	
-	boundaries[currow,nextcol]=endobs
-	
-	return (boundaries)
+	if (nextcol==4) {
+		boundaries[currow,nextcol]=endobs
+		return (boundaries)
+	}
+	else return (boundaries[1..rows(boundaries)-1, .])
 
 }
 
