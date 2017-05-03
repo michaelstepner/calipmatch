@@ -1,25 +1,15 @@
-*! version 0.0.3  2may2017  Michael Stepner and Allan Garland, stepner@mit.edu
-
-/* CC0 license information:
-To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
-to this software to the public domain worldwide. This software is distributed without any warranty.
-
-This code is licensed under the CC0 1.0 Universal license.  The full legal text as well as a
-human-readable summary can be accessed at http://creativecommons.org/publicdomain/zero/1.0/
-*/
-
-* Why did I include a formal license? Jeff Atwood gives good reasons: https://blog.codinghorror.com/pick-a-license-any-license/
-
+*! version 0.0.4  3may2017  Michael Stepner and Allan Garland, stepner@mit.edu
 program define calipmatch, sortpreserve rclass
 	version 13.0
-	syntax [if] [in], GENerate(name) CASEvar(varname) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
+	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
 		
 	* Verify there are same number of caliper vars as caliper widths
 	local caliper_var_count : word count `calipermatch'
 	local caliper_width_count : word count `caliperwidth'
 	if (`caliper_var_count'!=`caliper_width_count') {
-		di as error "You must specify the same number of caliper widths as caliper matching variables."
-		exit 198
+		di as error "must specify the same number of caliper widths as caliper matching variables."
+		if (`caliper_var_count'<`caliper_width_count') exit 123
+		else exit 122
 	}
 	
 	* Verify that all exact matching variables have integer data tyes
@@ -35,8 +25,8 @@ program define calipmatch, sortpreserve rclass
 			di as error "Exact matching variables must have data type {it:byte}, {it:int}, or {it:long}."
 			
 			cap confirm numeric variable `var', exact
-			if _rc==0 di as error "Use the {bf:recast} command or caliper matching for variable: `var'."
-			else di as error "Use the {bf:destring} command or another method to change the datatype to a numeric integer for variable: `var'."
+			if _rc==0 di as error "Use the {help recast} command or caliper matching for variable: `var'."
+			else di as error "Use the {help destring} command or another method to change the datatype for variable: `var'."
 			
 			exit 198
 		}
@@ -52,19 +42,17 @@ program define calipmatch, sortpreserve rclass
 	* Verify that case/control var is always 0 or 1 in sample
 	cap assert `casevar'==0 | `casevar'==1 if `touse'==1
 	if _rc==9 {
-		di as error "The casevar() must always be 0 or 1 in the sample."
+		di as error "casevar() must always be 0 or 1 in the sample."
 		exit 198
 	}
-	else if _rc!=0 {
-		error _rc
-	}
+	error _rc
 	
 	* Sort into groups for caliper matching, randomizing order of cases and controls
 	tempvar rand
-	gen double `rand'=runiform()
+	gen float `rand'=runiform()
 	sort `touse' `exactmatch' `casevar' `rand'
 	
-	* Find group boundaries
+	* Count the number of total obs and cases in sample
 	qui count if `touse'==1
 	local insample_total = r(N)
 	if (`insample_total'==0) {
@@ -74,20 +62,34 @@ program define calipmatch, sortpreserve rclass
 	
 	qui count if `casevar'==1 in `=_N-`insample_total'+1'/`=_N'
 	local cases_total = r(N)
+	if (`insample_total'==`cases_total') {
+		di as error "no control observations in sample"
+		exit 2001
+	}
+	if (`cases_total'==0) {
+		di as error "no case observations in sample"
+		exit 2001
+	}
 	
+	* Find group boundaries 
 	mata: boundaries=find_group_boundaries("`exactmatch'", "`casevar'", `=_N-`insample_total'+1', `=_N')
 	
 	* Perform matching within each group
 	qui gen long `generate'=.
+	tempname case_matches
 	
-	return clear
-	mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")
-	qui compress `generate'
+	if r(no_matches)==0 {
+		mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")
+		qui compress `generate'
+		
+		matrix `case_matches'=r(matchsuccess)
+		matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
+	}
+	else {
+		matrix `case_matches'=`cases_total' \ J(`maxmatches', 1, 0)
+	}
 	
 	* Print report on match rate
-	tempname case_matches
-	matrix `case_matches'=r(matchsuccess)
-	matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
 	local cases_matched = `cases_total'-`case_matches'[1,1]
 	local match_rate_print = string(`cases_matched'/`cases_total'*100,"%9.1f")
 
@@ -185,11 +187,12 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	
 	}
 	
+	stata("return clear")
 	st_matrix("r(matchsuccess)",matchsuccess)
 
 }
 
-real matrix find_group_boundaries(string scalar byvars, string scalar casevar, real scalar startobs, real scalar endobs) {
+real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, real scalar startobs, real scalar endobs) {
 
 	real matrix boundaries
 	boundaries = (startobs, ., ., .)
@@ -201,7 +204,7 @@ real matrix find_group_boundaries(string scalar byvars, string scalar casevar, r
 	currow=1
 	
 	real rowvector groupvars
-	groupvars = st_varindex(tokens(byvars))
+	groupvars = st_varindex(tokens(grpvars))
 	
 	real scalar casevarnum
 	casevarnum = st_varindex(casevar)
@@ -209,29 +212,35 @@ real matrix find_group_boundaries(string scalar byvars, string scalar casevar, r
 	real scalar obs
 	for (obs=startobs+1; obs<=endobs; obs++) {
 		if (st_data(obs, groupvars)!=st_data(obs-1, groupvars)) {
-			if (nextcol==2) {
-				boundaries[currow,1]=obs
-			}
-			else if (nextcol==4) {
+			if (nextcol==4) {
 				boundaries[currow,4]=obs-1
 				boundaries=boundaries\(obs, ., ., .)
 				nextcol=2
 				currow=currow+1
 			}
+			else {  // only one value of casevar in prev group --> skip group
+				boundaries[currow,1]=obs
+			} 
 		}
 		else if (_st_data(obs, casevarnum)!=_st_data(obs-1, casevarnum)) {
-			// XX mark error if nextcol!=2?
 			boundaries[currow,2]=obs-1
 			boundaries[currow,3]=obs
 			nextcol=4
 		}
 	}
 	
+	stata("return clear")
+	st_numscalar("r(no_matches)",0)
 	if (nextcol==4) {
 		boundaries[currow,nextcol]=endobs
 		return (boundaries)
 	}
-	else return (boundaries[1..rows(boundaries)-1, .])
+	else {
+	
+		if (currow>1) return (boundaries[1..rows(boundaries)-1, .])
+		else st_numscalar("r(no_matches)",1)
+	
+	}
 
 }
 
