@@ -1,4 +1,4 @@
-*! version 0.0.4  3may2017  Michael Stepner and Allan Garland, stepner@mit.edu
+*! version 1.0.0  9may2017  Michael Stepner and Allan Garland, stepner@mit.edu
 
 /* CC0 license information:
 To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
