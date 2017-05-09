@@ -158,6 +158,7 @@ keep case income_percentile sex
 replace case=1 if sex==0
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
+assert matchgroup==.
 keep case income_percentile sex
 
 * string case variable
