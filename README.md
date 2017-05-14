@@ -1,3 +1,7 @@
+## Installation
+
+Install **calipmatch** in Stata from the SSC repository: `ssc install calipmatch`
+
 ## Stata help file
 
 This documentation was converted automatically from the Stata help file by running `log html calipmatch.sthlp calipmatch.md` in Stata.
