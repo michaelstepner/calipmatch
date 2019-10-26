@@ -194,7 +194,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 				diffvals = (controlvals :- matchvals)
 				diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
 				
-				// Find closest case
+				// Find closest control to match
 				minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
 				
 				// If a match is found, store it
