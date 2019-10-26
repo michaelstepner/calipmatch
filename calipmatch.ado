@@ -1,4 +1,4 @@
-*! version 1.0.0  9may2017  Michael Stepner and Allan Garland, stepner@mit.edu
+*! version 1.1.0  26oct2019  Michael Stepner and Allan Garland, stepner@mit.edu
 
 /* CC0 license information:
 To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
@@ -148,52 +148,72 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	
 	real scalar curmatch
 	curmatch = 0
+	real scalar highestmatch
+	highestmatch = 0
 	
 	real colvector matchsuccess
 	matchsuccess = J(maxmatch, 1, 0)
 	
 	real scalar brow
+	real rowvector casematchcount
+	real scalar caseindex
 	real scalar caseobs
 	real scalar controlobs
-	real scalar casematchcount
+	real scalar matchattempt
 	real rowvector matchvals
 	real rowvector controlvals
 	real matrix matchbounds
 	
 	for (brow=1; brow<=rows(boundaries); brow++) {
 	
-		for (caseobs=boundaries[brow,3]; caseobs<=boundaries[brow,4]; caseobs++) {
-		
-			curmatch++
-			casematchcount=0
-			_st_store(caseobs, matchgrp, curmatch)
+		casematchcount = J(boundaries[brow,4] - boundaries[brow,3] + 1, 1, 0)
+	
+		for (matchattempt=1; matchattempt<=maxmatch; matchattempt++) {
+	
+			for (caseobs=boundaries[brow,3]; caseobs<=boundaries[brow,4]; caseobs++) {
 			
-			matchvals = st_data(caseobs, matchvars)
-			matchbounds = (matchvals-tolerance)\(matchvals+tolerance)
+				caseindex = caseobs - boundaries[brow,3] + 1
 			
-			for (controlobs=boundaries[brow,1]; controlobs<=boundaries[brow,2]; controlobs++) {
-			
-				if (_st_data(controlobs, matchgrp)!=.) continue
-				
-				controlvals = st_data(controlobs, matchvars)
-				
-				if (controlvals>=matchbounds[1,.] & controlvals<=matchbounds[2,.]) {
-					casematchcount++
-					_st_store(controlobs, matchgrp, curmatch)
+				if (matchattempt==1) {
+					highestmatch++
+					curmatch = highestmatch
+					_st_store(caseobs, matchgrp, curmatch)
+				}
+				else {
+					if (casematchcount[caseindex,1] < matchattempt - 1) continue
+					curmatch = _st_data(caseobs, matchgrp)
 				}
 				
-				if (casematchcount==maxmatch) break
+				matchvals = st_data(caseobs, matchvars)
+				matchbounds = (matchvals-tolerance)\(matchvals+tolerance)
+				
+				for (controlobs=boundaries[brow,1]; controlobs<=boundaries[brow,2]; controlobs++) {
+				
+					if (_st_data(controlobs, matchgrp)!=.) continue
+					
+					controlvals = st_data(controlobs, matchvars)
+					
+					if (controlvals>=matchbounds[1,.] & controlvals<=matchbounds[2,.]) {
+						casematchcount[caseindex,1] = casematchcount[caseindex,1] + 1
+						_st_store(controlobs, matchgrp, curmatch)
+						break
+					}
+				
+				}
+				
+				if (matchattempt==1 & casematchcount[caseindex,1]==0) {
+					highestmatch--
+					_st_store(caseobs, matchgrp, .)
+				}
 			
 			}
-			
-			if (casematchcount==0) {
-				curmatch--
-				_st_store(caseobs, matchgrp, .)
-			}
-			else {
-				matchsuccess[casematchcount,1] = matchsuccess[casematchcount,1]+1
-			}
+		}
 		
+		for (caseindex=1; caseindex <= boundaries[brow,4] - boundaries[brow,3] + 1; caseindex++) {
+			matchattempt = casematchcount[caseindex,1]
+			if (matchattempt > 0) {
+				matchsuccess[matchattempt,1] = matchsuccess[matchattempt,1] + 1
+			}
 		}
 	
 	}
