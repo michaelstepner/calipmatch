@@ -157,12 +157,14 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	real scalar brow
 	real rowvector casematchcount
 	real scalar caseindex
+	real colvector matchedcontrolindex
+	real matrix minties
 	real scalar caseobs
 	real scalar controlobs
 	real scalar matchattempt
 	real rowvector matchvals
-	real rowvector controlvals
-	real matrix matchbounds
+	real matrix controlvals
+	real matrix diffvals
 	
 	for (brow=1; brow<=rows(boundaries); brow++) {
 	
@@ -184,23 +186,24 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 					curmatch = _st_data(caseobs, matchgrp)
 				}
 				
+				// Store matchvar values for the case and for the controls that have not yet been matched
 				matchvals = st_data(caseobs, matchvars)
-				matchbounds = (matchvals-tolerance)\(matchvals+tolerance)
+				controlvals = st_data((boundaries[brow,1], boundaries[brow,2]), matchvars) :* editvalue(st_data((boundaries[brow,1], boundaries[brow,2]), matchgrp):==., 0, .)
 				
-				for (controlobs=boundaries[brow,1]; controlobs<=boundaries[brow,2]; controlobs++) {
+				// Store difference in matchvar values if they are within tolerance
+				diffvals = (controlvals :- matchvals)
+				diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
 				
-					if (_st_data(controlobs, matchgrp)!=.) continue
-					
-					controlvals = st_data(controlobs, matchvars)
-					
-					if (controlvals>=matchbounds[1,.] & controlvals<=matchbounds[2,.]) {
-						casematchcount[caseindex,1] = casematchcount[caseindex,1] + 1
-						_st_store(controlobs, matchgrp, curmatch)
-						break
-					}
+				// Find closest case
+				minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
 				
+				// If a match is found, store it
+				if (rows(matchedcontrolindex)>0) {
+					casematchcount[caseindex,1] = casematchcount[caseindex,1] + 1
+					_st_store(boundaries[brow,1] + matchedcontrolindex[1,1] - 1, matchgrp, curmatch)
 				}
 				
+				// If zero matches were found for a case, remove its matchgrp value and reuse it for the next case
 				if (matchattempt==1 & casematchcount[caseindex,1]==0) {
 					highestmatch--
 					_st_store(caseobs, matchgrp, .)
