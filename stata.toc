@@ -1,0 +1,4 @@
+v 3
+d calipmatch development repository
+d by Michael Stepner (software@michaelstepner.com)
+p calipmatch module for caliper matching without replacement

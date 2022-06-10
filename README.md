@@ -1,6 +1,10 @@
 ## Installation
 
-Install **calipmatch** in Stata from the SSC repository: `ssc install calipmatch`
+This beta version of **calipmatch** can be installed using:
+
+```
+net install project, from(https://github.com/michaelstepner/calipmatch/raw/develop)
+```
 
 ## Stata help file
 
