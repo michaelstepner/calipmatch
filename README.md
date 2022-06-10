@@ -3,7 +3,7 @@
 This beta version of **calipmatch** can be installed using:
 
 ```
-net install project, from(https://github.com/michaelstepner/calipmatch/raw/develop)
+net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/develop)
 ```
 
 ## Stata help file
