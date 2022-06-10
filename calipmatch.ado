@@ -1,4 +1,4 @@
-*! version 1.1.0  26oct2019  Michael Stepner and Allan Garland, stepner@mit.edu
+*! version 1.1.0  10jun2022  Michael Stepner and Allan Garland, software@michaelstepner.com
 
 /* CC0 license information:
 To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
@@ -15,11 +15,9 @@ program define calipmatch, sortpreserve rclass
 	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
 		
 	* Verify there are same number of caliper vars as caliper widths
-	local caliper_var_count : word count `calipermatch'
-	local caliper_width_count : word count `caliperwidth'
-	if (`caliper_var_count'!=`caliper_width_count') {
+	if (`: word count `calipermatch'' != `: word count `caliperwidth'') {
 		di as error "must specify the same number of caliper widths as caliper matching variables."
-		if (`caliper_var_count'<`caliper_width_count') exit 123
+		if (`: word count `calipermatch'' < `: word count `caliperwidth'') exit 123
 		else exit 122
 	}
 	
@@ -82,18 +80,18 @@ program define calipmatch, sortpreserve rclass
 		exit 2001
 	}
 	
-	* Find group boundaries 
+	* Find group boundaries within exact-match groups
 	mata: boundaries=find_group_boundaries("`exactmatch'", "`casevar'", `=_N-`insample_total'+1', `=_N')
 	
-	* Perform matching within each group
-	qui gen long `generate'=.
+	* Perform caliper matching within each exact-match group
+	qui gen long `generate' = .
 	tempname case_matches
 	
 	if r(no_matches)==0 {
 		mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")
 		qui compress `generate'
 		
-		matrix `case_matches'=r(matchsuccess)
+		matrix `case_matches' = r(matchsuccess)
 		matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
 	}
 	else {
@@ -148,6 +146,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	
 	real scalar curmatch
 	curmatch = 0
+
 	real scalar highestmatch
 	highestmatch = 0
 	
@@ -176,6 +175,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 			
 				caseindex = caseobs - boundaries[brow,3] + 1
 			
+				// Set the value of the match group
 				if (matchattempt==1) {
 					highestmatch++
 					curmatch = highestmatch
@@ -227,6 +227,21 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 }
 
 real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, real scalar startobs, real scalar endobs) {
+	// Inputs:
+	//		Dataset sorted by the variables specified by "grpvars casevar" within the rows [startobs, endobs]
+	//
+	//		- grpvars: one or more variables for which each distinct set of values constitutes a group
+	//		- casevar: a variable which takes values {0,1}
+	//		- startobs: the first observation to process
+	//		- endobs: the last observation to process
+	//
+	//	Outputs:
+	//		return a matrix with dimensions G x 4, where G is the number of distinct groups containing both cases and controls.
+	//		Col 1 = the first obs in a group with casevar==0
+	//		Col 2 = the last obs in a group with casevar==0
+	//		Col 3 = the first obs in a group with casevar==1
+	//		Col 4 = the last obs in a group with casevar==1
+
 
 	real matrix boundaries
 	boundaries = (startobs, ., ., .)
@@ -252,9 +267,9 @@ real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, 
 				nextcol=2
 				currow=currow+1
 			}
-			else {  // only one value of casevar in prev group --> skip group
+			else {  // only one value of casevar (all controls or all cases) in prev group --> skip group
 				boundaries[currow,1]=obs
-			} 
+			}
 		}
 		else if (_st_data(obs, casevarnum)!=_st_data(obs-1, casevarnum)) {
 			boundaries[currow,2]=obs-1
@@ -270,10 +285,8 @@ real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, 
 		return (boundaries)
 	}
 	else {
-	
 		if (currow>1) return (boundaries[1..rows(boundaries)-1, .])
 		else st_numscalar("r(no_matches)",1)
-	
 	}
 
 }
