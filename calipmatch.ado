@@ -134,6 +134,22 @@ set matastrict on
 mata:
 
 void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxmatch, string scalar calipvars, string scalar calipwidth) {
+	// Objective:
+	//		Perform caliper matching using the specified caliper variables and caliper widths, matching each case observation to one or
+	//		many controls. Identify the matches within pre-specified groups, and store a variable containing integers that define a group
+	//		of matched cases and controls.
+	//
+	// Inputs:
+	//		Dataset with the same sort order as it had when `find_group_boundaries`' was run.
+	//		- boundaries: G x 4 matrix output by find_group_boundaries()
+	//		- genvar: variable containing all missing values, which will be populated with matching groups
+	//		- maxmatch: a positive integer indicating the maximum number of control obs to match to each case obs
+	//		- calipvars: a list of numeric variables for caliper matching
+	//		- calipwidth: a list of caliper widths, specifying the maximum distance between case and control variables in each calipvar
+	//
+	//	Outputs:
+	//		The values of "genvar" are filled with integers that describe each group of matched cases and controls.
+	//		- r(matchsuccess) is a Stata return matrix tabulating the number of cases successfully matched to {1, ..., maxmatch} controls
 
 	real scalar matchgrp
 	matchgrp = st_varindex(genvar)
@@ -227,6 +243,9 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 }
 
 real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, real scalar startobs, real scalar endobs) {
+	// Objective:
+	//		For each set of distinct values of "grpvars", identify the starting and ending observation for cases and controls.
+	//
 	// Inputs:
 	//		Dataset sorted by the variables specified by "grpvars casevar" within the rows [startobs, endobs]
 	//
@@ -236,7 +255,7 @@ real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, 
 	//		- endobs: the last observation to process
 	//
 	//	Outputs:
-	//		return a matrix with dimensions G x 4, where G is the number of distinct groups containing both cases and controls.
+	//		Return a matrix with dimensions G x 4, where G is the number of distinct groups containing both cases and controls.
 	//		Col 1 = the first obs in a group with casevar==0
 	//		Col 2 = the last obs in a group with casevar==0
 	//		Col 3 = the first obs in a group with casevar==1
