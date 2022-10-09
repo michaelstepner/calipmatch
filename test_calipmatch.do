@@ -228,3 +228,74 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex 
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3 5 5)"' ///
 	== 123
 
+*** NEW TESTS *** Performance Test - perfect match in the controls
+* One caliper, perfect match 
+clear 
+set seed 4585239
+
+set obs 200
+gen byte case=(_n<=20)
+gen byte income_percentile_ex =max(21,ceil(runiform() * 100))
+
+forvalues m=1/20 {
+	qui replace income_percentile_ex = `m' in `m'
+	local t = `m'+20
+	qui replace income_percentile_ex = `m' in `t'
+} 
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile_ex) caliperwidth(5)
+forvalues m=1/20 {
+	assert matchgroup[`m'] == matchgroup[`m'+20]
+}
+keep case income_percentile_ex
+
+* One caliper and one exact matching variable
+
+gen byte sex_ex=round(runiform())
+replace case=(_n<=20)
+forvalues m=1/20 {
+	qui replace sex_ex = mod(`m',2) in `m'
+	local t = `m'+20
+	qui replace sex_ex = mod(`t',2) in `t'
+} 
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
+	calipermatch(income_percentile_ex) caliperwidth(5) exactmatch(sex_ex)
+forvalues m=1/20 {
+	assert matchgroup[`m'] == matchgroup[`m'+20]
+}
+
+
+* Many caliper and many exact matching variables, m:1 match
+
+clear
+set obs 50000
+
+gen byte case=(_n<=1000)
+gen byte sex_ex=round(runiform())
+gen byte age_ex = 44 + ceil(runiform()*17)
+gen byte self_emp_ex = (runiform()<0.1)
+gen byte prov_ex = ceil(runiform()*9)
+gen byte cal_val_ex=max(10001, ceil(runiform() * 100))
+
+forvalues m=1/1000 {
+	forvalues t=0/4 {
+	local s = `m' + `t'*1000
+		qui replace sex_ex = mod(`m',2) in `s'
+		qui replace age_ex = mod(`m',30)+44 in `s'
+		qui replace self_emp_ex = mod(`m',2) in `s'
+		qui replace prov_ex = mod(`m',2) in `s'
+		qui replace cal_val_ex = mod(`m',1000) in `s'
+	}
+} 
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(4) ///
+	exactmatch(sex_ex self_emp_ex prov_ex) calipermatch(age_ex cal_val_ex) caliperwidth(3 5)
+	
+	
+forvalues m=1/1000 {
+	forvalues t=1/4 {
+	local s = `m' + `t'*1000
+		assert matchgroup[`m'] == matchgroup[`s']
+	}
+}
