@@ -166,12 +166,6 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 	== 111
 drop sex2
 
-***NEW TEST * exact variable is ambiguous
-gen byte sex2=round(runiform())
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(se)"' ///
-	== 111
-drop sex2
-
 ***NEW TEST * exact variable does not exist
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(nonsense)"' ///
 	== 111
