@@ -105,7 +105,25 @@ keep case income_percentile
 * if statement that matches no observations
 rcof `"test_calipmatch if income_percentile>100, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
 	== 2000
-	
+
+***NEW TEST * maximum matches is positive, but not an integer	
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
+	== 198
+
+***NEW TEST * caliper variable is ambiguous
+gen byte income_percentile2=ceil(rnormal() * 100)
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_perc) caliperwidth(5)"' ///
+	== 111
+drop income_percentile2
+
+***NEW TEST * caliper variable is does not exist
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(nonsense) caliperwidth(5)"' ///
+	== 111
+
+***NEW TEST * caliper width is negative
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(-5)"' ///
+	== 125
+
 * no controls
 replace case=1
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
@@ -131,7 +149,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 * case/control variable not always 0 or 1, but not in sample
 test_calipmatch in 2/200, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)
 keep case income_percentile
-	
+
 *** One caliper matching variable and one exact matching variable
 
 gen byte sex=round(runiform())
