@@ -116,7 +116,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 	== 111
 drop income_percentile2
 
-***NEW TEST * caliper variable is does not exist
+***NEW TEST * caliper variable does not exist
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(nonsense) caliperwidth(5)"' ///
 	== 111
 
@@ -165,6 +165,16 @@ gen byte sex2=round(runiform())
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(se)"' ///
 	== 111
 drop sex2
+
+***NEW TEST * exact variable is ambiguous
+gen byte sex2=round(runiform())
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(se)"' ///
+	== 111
+drop sex2
+
+***NEW TEST * exact variable does not exist
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(nonsense)"' ///
+	== 111
 
 * no controls among one matching group
 replace case=1 if sex==1
