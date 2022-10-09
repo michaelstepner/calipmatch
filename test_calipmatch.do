@@ -160,6 +160,12 @@ test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
 keep case income_percentile sex
 
+***NEW TEST * exact variable is ambiguous
+gen byte sex2=round(runiform())
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(se)"' ///
+	== 111
+drop sex2
+
 * no controls among one matching group
 replace case=1 if sex==1
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
