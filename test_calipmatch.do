@@ -111,7 +111,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(i
 	== 198
 
 /*
-*Uncomment this test if the change suggested in Update 2 is implemented. Otherwise it will fail
+*Uncomment this test if the change suggested in Update 2 is implemented.
 ***NEW TEST * maximum matches is a negative integer  
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
 	== 125
