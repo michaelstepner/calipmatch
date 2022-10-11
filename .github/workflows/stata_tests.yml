@@ -21,7 +21,7 @@ jobs:
 
           # The following command returns 1 even though it's ok
           set +e
-          sudo yes | /tmp/statafiles/install
+          sudo sh -c 'yes | /tmp/statafiles/install'
           set -e
 
           cd /usr/local/bin
