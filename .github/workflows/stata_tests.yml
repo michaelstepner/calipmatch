@@ -16,7 +16,7 @@ jobs:
           curl -u oi:${OI_HTTPS_PW} https://d2bx6aas1fcmzl.cloudfront.net/stata16/Stata16Linux64.tar.gz --output /tmp/statafiles/Stata16Linux64.tar.gz
           cd /tmp/statafiles
           tar -zxf ./Stata16Linux64.tar.gz
-          mkdir -p /usr/local/stata16
+          sudo mkdir -p /usr/local/stata16
           cd /usr/local/stata16
 
           # The following command returns 1 even though it's ok
