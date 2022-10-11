@@ -210,3 +210,6 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex 
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3 5 5)"' ///
 	== 123
 
+*-------------------------------------------------------------------------------
+
+di "Successfully completed all tests."
