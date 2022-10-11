@@ -33,5 +33,8 @@ jobs:
         env:
           OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
 
-      - name: Run Stata
-        run: stata-mp
+      - name: Check out code repository
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        run: stata-mp -b do test_calipmatch.do
