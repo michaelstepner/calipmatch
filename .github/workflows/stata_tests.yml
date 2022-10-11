@@ -1,6 +1,8 @@
 name: stata_tests
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
@@ -37,4 +39,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Run tests
-        run: stata-mp -b do test_calipmatch.do
+        run: |
+          stata-mp -b do test_calipmatch.do
+          cat test_calipmatch.log
+          if egrep --before-context=1 --max-count=1 "^r\([0-9]+\);$" test_calipmatch.log
+          then
+              exit 1
+          fi
