@@ -110,6 +110,13 @@ rcof `"test_calipmatch if income_percentile>100, gen(matchgroup) case(case) maxm
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
 	== 198
 
+/*
+*Uncomment this test if the change suggested in Update 2 is implemented. Otherwise it will fail
+***NEW TEST * maximum matches is a negative integer  
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
+	== 125
+*/ 
+
 ***NEW TEST * caliper variable is ambiguous
 gen byte income_percentile2=ceil(rnormal() * 100)
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_perc) caliperwidth(5)"' ///
