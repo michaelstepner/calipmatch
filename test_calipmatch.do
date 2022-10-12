@@ -17,7 +17,11 @@ program define test_calipmatch
 	
 		* Exactly one case per matchgroup
 		egen casecount=sum(`casevar'), by(`generate')
-		qui assert casecount==1 if !mi(`generate')
+		cap assert casecount==1 if !mi(`generate')
+		if (_rc!=0) {
+			di as error "More than one case per matchgroup"
+			exit 9
+		}
 		
 		* Highest matchgroup value = number of matched cases
 		sum `generate', meanonly
@@ -81,7 +85,11 @@ program define test_calipmatch
 		
 		forvalues m=0/`maxmatches' {
 			 qui count if matched_controls==`m'
-			 assert r(N)==matches[`=`m'+1',1]
+			 cap assert r(N)==matches[`=`m'+1',1]
+			 if (_rc!=0) {
+				di as error "Incorrect report for number of matched controls"
+				exit 9
+			}
 		}
 				
 	}
@@ -92,6 +100,8 @@ end
 *** One caliper matching variable
 clear
 set seed 4585239
+set sortseed 789045789
+
 
 set obs 200
 gen byte case=(_n<=20)
