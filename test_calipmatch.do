@@ -245,6 +245,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex 
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3 5 5)"' ///
 	== 123
 
+<<<<<<< HEAD
 *** NEW TESTS *** Performance Test - perfect match in the controls
 * One caliper, perfect match 
 clear 
@@ -316,3 +317,8 @@ forvalues m=1/1000 {
 		assert matchgroup[`m'] == matchgroup[`s']
 	}
 }
+=======
+*-------------------------------------------------------------------------------
+
+di "Successfully completed all tests."
+>>>>>>> develop

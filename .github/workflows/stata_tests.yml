@@ -1,0 +1,48 @@
+name: stata_tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  stata_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # change max time from default 6hr
+
+    steps:
+      - name: Install Stata
+        run: |
+          # Install Stata
+          mkdir -p /tmp/statafiles
+          curl -u oi:${OI_HTTPS_PW} https://d2bx6aas1fcmzl.cloudfront.net/stata16/Stata16Linux64.tar.gz --output /tmp/statafiles/Stata16Linux64.tar.gz
+          cd /tmp/statafiles
+          tar -zxf ./Stata16Linux64.tar.gz
+          sudo mkdir -p /usr/local/stata16
+          cd /usr/local/stata16
+
+          # The following command returns 1 even though it's ok
+          set +e
+          sudo sh -c 'yes | /tmp/statafiles/install'
+          set -e
+
+          cd /usr/local/bin
+          sudo ln -s /usr/local/stata16/stata-mp .
+          sudo ln -s /usr/local/stata16/xstata-mp .
+          sudo curl -u oi:${OI_HTTPS_PW} https://d2bx6aas1fcmzl.cloudfront.net/stata16/stata.lic --output /usr/local/stata16/stata.lic
+          rm -r /tmp/statafiles
+          cd /tmp
+        env:
+          OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
+
+      - name: Check out code repository
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        run: |
+          stata-mp -b do test_calipmatch.do
+          cat test_calipmatch.log
+          if egrep --before-context=1 --max-count=1 "^r\([0-9]+\);$" test_calipmatch.log
+          then
+              exit 1
+          fi
