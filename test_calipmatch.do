@@ -89,7 +89,10 @@ program define test_calipmatch
 end
 
 
+*-------------------------------------------------------------------------------
 *** One caliper matching variable
+*-------------------------------------------------------------------------------
+
 clear
 set seed 4585239
 
@@ -102,34 +105,57 @@ test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5)
 keep case income_percentile
 
-* if statement that matches no observations
-rcof `"test_calipmatch if income_percentile>100, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
-	== 2000
+*-------------------------------------------------------------------------------
+* Syntax
+*-------------------------------------------------------------------------------
 
-***NEW TEST * maximum matches is positive, but not an integer	
+* string case variable
+drop case
+gen case=cond(_n<=20,"case","ctrl")
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) "' ///
+	== 109
+drop case
+gen byte case=(_n<=20)
+
+* maximum matches is positive, but not an integer	
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
 	== 198
 
-/*
-*Uncomment this test if the change suggested in Update 2 is implemented.
-***NEW TEST * maximum matches is a negative integer  
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
+* maximum matches is a negative integer  
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(-1) calipermatch(income_percentile) caliperwidth(5)"' ///
 	== 125
-*/ 
 
-***NEW TEST * caliper variable is ambiguous
+* multiple maximum matches specified
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1 5) calipermatch(income_percentile) caliperwidth(5)"' ///
+	== 125
+
+* caliper variable is ambiguous
 gen byte income_percentile2=ceil(rnormal() * 100)
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_perc) caliperwidth(5)"' ///
 	== 111
 drop income_percentile2
 
-***NEW TEST * caliper variable does not exist
+* caliper variable does not exist
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(nonsense) caliperwidth(5)"' ///
 	== 111
 
-***NEW TEST * caliper width is negative
+* caliper width is negative
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(-5)"' ///
 	== 125
+	
+*-------------------------------------------------------------------------------
+* Necessary Conditions and Set-up for Matching
+*-------------------------------------------------------------------------------
+
+* generate a variable that already exists
+gen matchgroup=.
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
+	== 110
+drop matchgroup
+
+* if statement that matches no observations
+rcof `"test_calipmatch if income_percentile>100, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
+	== 2000
 
 * no controls
 replace case=1
@@ -139,13 +165,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 * no cases
 replace case=0
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
-	== 2001
-	
-* generate a variable that already exists
-gen matchgroup=.
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
-	== 110
-drop matchgroup
+	== 2001	
 
 * case/control variable not always 0 or 1 in sample
 replace case=(_n<=20)
@@ -157,7 +177,24 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 test_calipmatch in 2/200, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)
 keep case income_percentile
 
+*-------------------------------------------------------------------------------
+* Performance
+*-------------------------------------------------------------------------------
+
+* perfect match exists for each case
+clear 
+set obs 100
+gen byte income_percentile = _n 
+expand 2, gen(case)
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)
+forvalues m=1/100 {
+	assert matchgroup[`m'] == matchgroup[`m'+100]
+}
+
+
+*-------------------------------------------------------------------------------
 *** One caliper matching variable and one exact matching variable
+*-------------------------------------------------------------------------------
 
 gen byte sex=round(runiform())
 replace case=(_n<=20)
@@ -167,15 +204,38 @@ test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
 keep case income_percentile sex
 
-***NEW TEST * exact variable is ambiguous
+*-------------------------------------------------------------------------------
+* Syntax
+*-------------------------------------------------------------------------------
+
+* exact variable is ambiguous
 gen byte sex2=round(runiform())
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(se)"' ///
 	== 111
 drop sex2
 
-***NEW TEST * exact variable does not exist
+* exact variable does not exist
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(nonsense)"' ///
 	== 111
+
+* float exact matching variable
+recast float sex
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)"' ///
+	== 198
+	
+* string exact matching variable
+rename sex sex_numeric
+gen sex=cond(sex_numeric==0,"M","F")
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)"' ///
+	== 198
+
+drop sex
+rename sex_numeric sex
+recast byte sex
+
+*-------------------------------------------------------------------------------
+* Necessary Conditions and Set-up for Matching
+*-------------------------------------------------------------------------------
 
 * no controls among one matching group
 replace case=1 if sex==1
@@ -196,31 +256,10 @@ test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 assert matchgroup==.
 keep case income_percentile sex
 
-* string case variable
-drop case
-gen case=cond(_n<=20,"case","ctrl")
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)"' ///
-	== 109
-	
-drop case
-gen byte case=(_n<=20)
 
-* float exact matching variable
-recast float sex
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)"' ///
-	== 198
-	
-* string exact matching variable
-rename sex sex_numeric
-gen sex=cond(sex_numeric==0,"M","F")
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)"' ///
-	== 198
-
-drop sex
-rename sex_numeric sex
-recast byte sex
-
+*-------------------------------------------------------------------------------
 *** Many caliper and exact matching variables, m:1 match
+*-------------------------------------------------------------------------------
 
 clear
 set obs 50000
@@ -237,6 +276,10 @@ test_calipmatch, gen(matchgroup) case(case) maxmatches(5) ///
 	exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3 5)
 keep case sex age self_emp prov income_percentile
 
+*-------------------------------------------------------------------------------
+* Syntax
+*-------------------------------------------------------------------------------
+
 * Not enough caliper widths
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3)"' ///
 	== 122
@@ -245,80 +288,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex 
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3 5 5)"' ///
 	== 123
 
-<<<<<<< HEAD
-*** NEW TESTS *** Performance Test - perfect match in the controls
-* One caliper, perfect match 
-clear 
-set seed 4585239
 
-set obs 200
-gen byte case=(_n<=20)
-gen byte income_percentile_ex =max(21,ceil(runiform() * 100))
-
-forvalues m=1/20 {
-	qui replace income_percentile_ex = `m' in `m'
-	local t = `m'+20
-	qui replace income_percentile_ex = `m' in `t'
-} 
-
-test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile_ex) caliperwidth(5)
-forvalues m=1/20 {
-	assert matchgroup[`m'] == matchgroup[`m'+20]
-}
-keep case income_percentile_ex
-
-* One caliper and one exact matching variable
-
-gen byte sex_ex=round(runiform())
-replace case=(_n<=20)
-forvalues m=1/20 {
-	qui replace sex_ex = mod(`m',2) in `m'
-	local t = `m'+20
-	qui replace sex_ex = mod(`t',2) in `t'
-} 
-
-test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
-	calipermatch(income_percentile_ex) caliperwidth(5) exactmatch(sex_ex)
-forvalues m=1/20 {
-	assert matchgroup[`m'] == matchgroup[`m'+20]
-}
-
-
-* Many caliper and many exact matching variables, m:1 match
-
-clear
-set obs 50000
-
-gen byte case=(_n<=1000)
-gen byte sex_ex=round(runiform())
-gen byte age_ex = 44 + ceil(runiform()*17)
-gen byte self_emp_ex = (runiform()<0.1)
-gen byte prov_ex = ceil(runiform()*9)
-gen byte cal_val_ex=max(10001, ceil(runiform() * 100))
-
-forvalues m=1/1000 {
-	forvalues t=0/4 {
-	local s = `m' + `t'*1000
-		qui replace sex_ex = mod(`m',2) in `s'
-		qui replace age_ex = mod(`m',30)+44 in `s'
-		qui replace self_emp_ex = mod(`m',2) in `s'
-		qui replace prov_ex = mod(`m',2) in `s'
-		qui replace cal_val_ex = mod(`m',1000) in `s'
-	}
-} 
-
-test_calipmatch, gen(matchgroup) case(case) maxmatches(4) ///
-	exactmatch(sex_ex self_emp_ex prov_ex) calipermatch(age_ex cal_val_ex) caliperwidth(3 5)
-	
-	
-forvalues m=1/1000 {
-	forvalues t=1/4 {
-	local s = `m' + `t'*1000
-		assert matchgroup[`m'] == matchgroup[`s']
-	}
-}
-=======
 *-------------------------------------------------------------------------------
 
 di "Successfully completed all tests."
->>>>>>> develop
