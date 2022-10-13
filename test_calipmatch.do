@@ -184,12 +184,15 @@ keep case income_percentile
 * perfect match exists for each case
 clear 
 set obs 100
-gen byte income_percentile = _n 
+gen byte income_percentile_ex = _n 
 expand 2, gen(case)
-test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)
-forvalues m=1/100 {
-	assert matchgroup[`m'] == matchgroup[`m'+100]
-}
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile_ex) caliperwidth(5)
+gen caseval = income_percentile_ex if case ==1
+egen matchval = mean(caseval), by(matchgroup)
+gen squared_valdiff = (income_percentile_ex - matchval)^2
+sum squared_valdiff, meanonly
+di r(max)
+assert r(max) == 0
 keep case income_percentile
 
 *-------------------------------------------------------------------------------
