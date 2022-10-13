@@ -190,7 +190,7 @@ test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_pe
 forvalues m=1/100 {
 	assert matchgroup[`m'] == matchgroup[`m'+100]
 }
-
+keep case income_percentile
 
 *-------------------------------------------------------------------------------
 *** One caliper matching variable and one exact matching variable
