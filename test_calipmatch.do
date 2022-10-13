@@ -203,14 +203,21 @@ gen squared_valdiff = (income_percentile_ex - matchval)^2
 sum squared_valdiff, meanonly
 di r(max)
 assert r(max) == 0
-keep case income_percentile
+
 
 *----------------------------------------------------------------------------
 *** One caliper matching variable and one exact matching variable
 *----------------------------------------------------------------------------
 
+clear
+set seed 4585239
+set sortseed 789045789
+
+set obs 200
+gen byte case=(_n<=20)
+gen byte income_percentile=ceil(runiform() * 100)
+
 gen byte sex=round(runiform())
-replace case=(_n<=20)
 
 * Valid test
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
