@@ -127,7 +127,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(-1) calipermatch(i
 
 * multiple maximum matches specified
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1 5) calipermatch(income_percentile) caliperwidth(5)"' ///
-	== 123
+	== 198
 
 * caliper variable is ambiguous
 gen byte income_percentile2=ceil(rnormal() * 100)
