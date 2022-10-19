@@ -1,13 +1,15 @@
 cscript "calipmatch" adofile calipmatch
 
 program define test_calipmatch
-
-	syntax [if] [in], GENerate(name) CASEvar(varname) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
 	
-	calipmatch `if' `in', generate(`generate') casevar(`casevar') maxmatches(`maxmatches') calipermatch(`calipermatch') ///
-						  caliperwidth(`caliperwidth') exactmatch(`exactmatch')
-						  
+	* Run calipmatch with verbatim arguments
+	calipmatch `0'
+
+	* Testing after successful run
 	if (_rc==0) {
+	
+		* Assign arguments to locals using the same syntax as calipmatch
+		syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
 	
 		* Store returned objects
 		local cases_total=r(cases_total)
