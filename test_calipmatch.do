@@ -99,35 +99,29 @@ program define test_calipmatch
 end
 
 
-*----------------------------------------------------------------------------
-*** One caliper matching variable
-*----------------------------------------------------------------------------
+*===============================================================================
+* Create dataset: one caliper matching variable
+*===============================================================================
 
 clear
 set seed 4585239
 set sortseed 789045789
 
-
 set obs 200
 gen byte case=(_n<=20)
 gen byte income_percentile=ceil(runiform() * 100)
 
-* Valid test
+*-------------------------------------------------------------------------------
+* Valid inputs
+*-------------------------------------------------------------------------------
+
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5)
 keep case income_percentile
 
-*----------------------------------------------------------------------------
-* Syntax
-*----------------------------------------------------------------------------
-
-* string case variable
-drop case
-gen case=cond(_n<=20,"case","ctrl")
-rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) "' ///
-	== 109
-drop case
-gen byte case=(_n<=20)
+*-------------------------------------------------------------------------------
+* Invalid syntax
+*-------------------------------------------------------------------------------
 
 * maximum matches is positive, but not an integer	
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
@@ -154,10 +148,18 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(no
 * caliper width is negative
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(-5)"' ///
 	== 125
-	
-*----------------------------------------------------------------------------
-* Necessary Conditions and Set-up for Matching
-*----------------------------------------------------------------------------
+
+*-------------------------------------------------------------------------------
+* Invalid data
+*-------------------------------------------------------------------------------
+
+* string case variable
+drop case
+gen case=cond(_n<=20,"case","ctrl")
+rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) "' ///
+	== 109
+drop case
+gen byte case=(_n<=20)
 
 * generate a variable that already exists
 gen matchgroup=.
@@ -177,7 +179,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 * no cases
 replace case=0
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
-	== 2001	
+	== 2001
 
 * case/control variable not always 0 or 1 in sample
 replace case=(_n<=20)
@@ -189,46 +191,52 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 test_calipmatch in 2/200, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)
 keep case income_percentile
 
-*----------------------------------------------------------------------------
-* Performance
-*----------------------------------------------------------------------------
-
-* perfect match exists for each case
-clear 
-set obs 100
-gen byte income_percentile_ex = _n 
-expand 2, gen(case)
-test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile_ex) caliperwidth(5)
-gen caseval = income_percentile_ex if case ==1
-egen matchval = mean(caseval), by(matchgroup)
-gen squared_valdiff = (income_percentile_ex - matchval)^2
-sum squared_valdiff, meanonly
-di r(max)
-assert r(max) == 0
-
-
-*----------------------------------------------------------------------------
-*** One caliper matching variable and one exact matching variable
-*----------------------------------------------------------------------------
+*===============================================================================
+* Create dataset: one caliper matching variable, with a perfect match per case
+*===============================================================================
 
 clear
-set seed 4585239
-set sortseed 789045789
+set obs 100
+gen byte income_percentile = _n
+expand 2, gen(case)
 
+*-------------------------------------------------------------------------------
+* Valid inputs, test performance of matching algorithm
+*-------------------------------------------------------------------------------
+
+* perfect match is found for each case, despite other valid matches
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)
+
+assert !mi(matchgroup)
+egen n = count(income_percentile), by(matchgroup)
+egen sd = sd(income_percentile), by(matchgroup)
+
+assert n == 2
+assert sd == 0
+keep case income_percentile
+
+
+*===============================================================================
+* Create dataset: one caliper matching variable and one exact matching variable
+*===============================================================================
+
+clear
 set obs 200
-gen byte case=(_n<=20)
-gen byte income_percentile=ceil(runiform() * 100)
+gen byte case = (_n<=20)
+gen byte income_percentile = ceil(runiform() * 100)
+gen byte sex = round(runiform())
 
-gen byte sex=round(runiform())
+*-------------------------------------------------------------------------------
+* Valid inputs
+*-------------------------------------------------------------------------------
 
-* Valid test
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
 keep case income_percentile sex
 
-*----------------------------------------------------------------------------
-* Syntax
-*----------------------------------------------------------------------------
+*-------------------------------------------------------------------------------
+* Invalid syntax
+*-------------------------------------------------------------------------------
 
 * exact variable is ambiguous
 gen byte sex2=round(runiform())
@@ -239,6 +247,10 @@ drop sex2
 * exact variable does not exist
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(nonsense)"' ///
 	== 111
+
+*-------------------------------------------------------------------------------
+* Invalid data
+*-------------------------------------------------------------------------------
 
 * float exact matching variable
 recast float sex
@@ -256,51 +268,59 @@ rename sex_numeric sex
 recast byte sex
 
 *----------------------------------------------------------------------------
-* Necessary Conditions and Set-up for Matching
+* Edge cases
 *----------------------------------------------------------------------------
 
-* no controls among one matching group
+* no controls among one matching group -> no matches in that group
 replace case=1 if sex==1
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
+
+assert mi(matchgroup) if sex==1
 keep case income_percentile sex
-	
-* no cases among one matching group
+
+* no cases among one matching group -> no matches in that group
 replace case=0 if sex==1
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
+
+assert mi(matchgroup) if sex==1
 keep case income_percentile sex
 	
-* no matching groups with both cases and controls
+* no matching groups with both cases and controls -> no matches in any group
 replace case=1 if sex==0
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)
-assert matchgroup==.
+
+assert mi(matchgroup)
 keep case income_percentile sex
 
 
-*----------------------------------------------------------------------------
-*** Many caliper and exact matching variables, m:1 match
-*----------------------------------------------------------------------------
+*===============================================================================
+* Create dataset: many caliper variables and many exact matching variables
+*===============================================================================
 
 clear
 set obs 50000
 
 gen byte case=(_n<=5000)
 gen byte sex=round(runiform())
-gen byte age = 44 + ceil(runiform()*17)
 gen byte self_emp = (runiform()<0.1)
-gen byte prov = ceil(runiform()*9)
+gen byte prov = ceil(runiform()*10)
+gen byte age = 44 + ceil(runiform()*17)
 gen byte income_percentile=ceil(runiform() * 100)
 
-* Valid test
+*-------------------------------------------------------------------------------
+* Valid inputs
+*-------------------------------------------------------------------------------
+
 test_calipmatch, gen(matchgroup) case(case) maxmatches(5) ///
 	exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3 5)
-keep case sex age self_emp prov income_percentile
+keep case sex self_emp prov age income_percentile
 
-*----------------------------------------------------------------------------
-* Syntax
-*----------------------------------------------------------------------------
+*-------------------------------------------------------------------------------
+* Invalid syntax
+*-------------------------------------------------------------------------------
 
 * Not enough caliper widths
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex self_emp prov) calipermatch(age income_percentile) caliperwidth(3)"' ///
