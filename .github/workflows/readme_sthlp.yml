@@ -37,8 +37,11 @@ jobs:
         env:
           OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
 
-      - name: Check out code repository
+      - name: Check out code repository (PR branch)
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+        if: github.ref != 'refs/heads/main'
 
       - name: Convert calipmatch.sthlp to HTML
         run: stata-mp log html calipmatch.sthlp calipmatch.html
