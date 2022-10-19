@@ -47,7 +47,10 @@ jobs:
         run: stata-mp log html calipmatch.sthlp calipmatch.html
 
       - name: Place HTML in README.md
-        run: cat README.md | sed -z 's/<!-- Begin calipmatch.sthlp -->.*<!-- End calipmatch.sthlp -->/<!-- Begin calipmatch.sthlp -->\n\n<!-- End calipmatch.sthlp -->/' | sed '/<!-- Begin calipmatch.sthlp -->/ r calipmatch.html' > README.md
+        run: |
+          sed -z -i 's/<!-- Begin calipmatch.sthlp -->.*<!-- End calipmatch.sthlp -->/<!-- Begin calipmatch.sthlp -->\n\n<!-- End calipmatch.sthlp -->/' README.md
+          sed -i '/<!-- Begin calipmatch.sthlp -->/ r calipmatch.html' README.md
+          rm calipmatch.html
 
       - name: Check if dashboard has changed
         run: echo "README_UNCHANGED=$(git diff --numstat | grep '^1\s*1\s*README\.md$' | wc -l)" >> $GITHUB_ENV
