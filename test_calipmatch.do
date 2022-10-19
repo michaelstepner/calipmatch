@@ -12,14 +12,14 @@ program define test_calipmatch
 		syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
 	
 		* Store returned objects
-		local cases_total=r(cases_total)
-		local cases_matched=r(cases_matched)
-		local match_rate=r(match_rate)
-		matrix matches=r(matches)
+		local cases_total = r(cases_total)
+		local cases_matched = r(cases_matched)
+		local match_rate = r(match_rate)
+		matrix matches = r(matches)
 	
 		* Exactly one case per matchgroup
-		egen casecount=sum(`casevar'), by(`generate')
-		cap assert casecount==1 if !mi(`generate')
+		egen casecount = sum(`casevar'), by(`generate')
+		cap assert casecount == 1 if !mi(`generate')
 		if (_rc!=0) {
 			di as error "More than one case per matchgroup"
 			exit 9
@@ -31,16 +31,16 @@ program define test_calipmatch
 		else assert `cases_matched'==0
 	
 		* All matched obs are within caliper width
-		local c=0
+		local c = 0
 		foreach var of varlist `calipermatch' {
 		
 			local ++c
 			local width : word `c' of `caliperwidth'
 
-			qui gen caseval=`var' if `casevar'==1 & !mi(`generate')
-			qui egen matchval=mean(caseval), by(`generate')
+			qui gen caseval = `var' if `casevar'==1 & !mi(`generate')
+			qui egen matchval = mean(caseval), by(`generate')
 			
-			qui gen valdiff=`var'-matchval
+			qui gen valdiff = `var' - matchval
 			sum valdiff, meanonly
 			if r(N)>0 {
 				assert r(min)>=-`width'
@@ -55,10 +55,10 @@ program define test_calipmatch
 		if ("`exactmatch'"!="") {
 			foreach var of varlist `exactmatch' {
 			
-				qui gen caseval=`var' if `casevar'==1 & !mi(`generate')
-				qui egen matchval=mean(caseval), by(`generate')
+				qui gen caseval = `var' if `casevar'==1 & !mi(`generate')
+				qui egen matchval = mean(caseval), by(`generate')
 				
-				qui gen valdiff=`var'-matchval
+				qui gen valdiff = `var' - matchval
 				sum valdiff, meanonly
 				if r(N)>0 {
 					assert r(min)==0
@@ -80,10 +80,10 @@ program define test_calipmatch
 		assert r(sum)==`cases_matched'
 		
 		* Tabulation of number of controls matched to each case reported correctly
-		qui gen control=1-`casevar'
-		qui egen matched_controls=sum(control), by(`generate')
-		qui replace matched_controls=0 if mi(`generate')
-		qui replace matched_controls=. if `casevar'!=1
+		qui gen control = 1 - `casevar'
+		qui egen matched_controls = sum(control), by(`generate')
+		qui replace matched_controls = 0 if mi(`generate')
+		qui replace matched_controls = . if `casevar'!=1
 		
 		forvalues m=0/`maxmatches' {
 			 qui count if matched_controls==`m'
