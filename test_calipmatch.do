@@ -131,7 +131,7 @@ gen byte case=(_n<=20)
 
 * maximum matches is positive, but not an integer	
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(.3) calipermatch(income_percentile) caliperwidth(5)"' ///
-	== 198
+	== 126
 
 * maximum matches is a negative integer  
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(-1) calipermatch(income_percentile) caliperwidth(5)"' ///
