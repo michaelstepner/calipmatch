@@ -11,13 +11,21 @@ jobs:
     timeout-minutes: 30 # change max time from default 6hr
 
     steps:
+      #######################
+      # Configure
+      #######################
+
+      - name: Check out code repository
+        uses: actions/checkout@v2
+
       - name: Install Stata
         run: ./automation/install_stata.sh
         env:
           OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
 
-      - name: Check out code repository
-        uses: actions/checkout@v2
+      #######################
+      # Build
+      #######################
 
       - name: Run tests
         run: |

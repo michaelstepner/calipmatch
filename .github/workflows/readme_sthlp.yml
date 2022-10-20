@@ -13,10 +13,9 @@ jobs:
     timeout-minutes: 30 # change max time from default 6hr
 
     steps:
-      - name: Install Stata
-        run: ./automation/install_stata.sh
-        env:
-          OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
+      #######################
+      # Configure
+      #######################
 
       - name: Check out code repository (main branch)
         uses: actions/checkout@v2
@@ -28,6 +27,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
         if: github.ref != 'refs/heads/main'
 
+      - name: Install Stata
+        run: ./automation/install_stata.sh
+        env:
+          OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
+
+      #######################
+      # Build
+      #######################
+
       - name: Convert Stata help file to HTML
         run: stata-mp log html calipmatch.sthlp calipmatch.html
 
@@ -36,6 +44,10 @@ jobs:
           sed -z -i 's/<!-- Begin calipmatch.sthlp -->.*<!-- End calipmatch.sthlp -->/<!-- Begin calipmatch.sthlp -->\n\n<!-- End calipmatch.sthlp -->/' README.md
           sed -i '/<!-- Begin calipmatch.sthlp -->/ r calipmatch.html' README.md
           rm calipmatch.html
+
+      #######################
+      # Push
+      #######################
 
       - name: Check if there are changes
         run: |
