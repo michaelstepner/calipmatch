@@ -37,16 +37,20 @@ jobs:
         env:
           OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
 
+      - name: Check out code repository (main branch)
+        uses: actions/checkout@v2
+        if: github.ref == 'refs/heads/main'
+
       - name: Check out code repository (PR branch)
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
         if: github.ref != 'refs/heads/main'
 
-      - name: Convert calipmatch.sthlp to HTML
+      - name: Convert Stata help file to HTML
         run: stata-mp log html calipmatch.sthlp calipmatch.html
 
-      - name: Place HTML in README.md
+      - name: Place Stata help file in README.md
         run: |
           sed -z -i 's/<!-- Begin calipmatch.sthlp -->.*<!-- End calipmatch.sthlp -->/<!-- Begin calipmatch.sthlp -->\n\n<!-- End calipmatch.sthlp -->/' README.md
           sed -i '/<!-- Begin calipmatch.sthlp -->/ r calipmatch.html' README.md
@@ -58,7 +62,7 @@ jobs:
           test -z "$(git status --porcelain)"
           echo "README_UPDATED=$?" >> $GITHUB_ENV
 
-      - name: Push updated dashboard to Github
+      - name: Push updated README to Github
         run: |
           git config user.name OppInsights-Bot
           git config user.email info@opportunityinsights.org
