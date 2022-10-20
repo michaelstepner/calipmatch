@@ -12,6 +12,7 @@ This documentation was converted automatically from the Stata help file by runni
 
 The help file looks best when viewed in Stata using `help calipmatch`.
 
+<!-- Begin calipmatch.sthlp -->
 <pre>
 <b><u>Title</u></b>
 <p>
@@ -140,3 +141,4 @@ The help file looks best when viewed in Stata using `help calipmatch`.
     agarland@hsc.mb.ca
 <p>
 </pre>
+<!-- End calipmatch.sthlp -->

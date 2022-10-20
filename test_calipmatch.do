@@ -93,9 +93,7 @@ program define test_calipmatch
 				exit 9
 			}
 		}
-				
 	}
-	
 end
 
 
@@ -175,7 +173,7 @@ rcof `"test_calipmatch if income_percentile>100, gen(matchgroup) case(case) maxm
 replace case=1
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
 	== 2001
-	
+
 * no cases
 replace case=0
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5)"' ///
@@ -256,7 +254,7 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(in
 recast float sex
 rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(1) calipermatch(income_percentile) caliperwidth(5) exactmatch(sex)"' ///
 	== 198
-	
+
 * string exact matching variable
 rename sex sex_numeric
 gen sex=cond(sex_numeric==0,"M","F")
