@@ -52,8 +52,11 @@ jobs:
           sed -i '/<!-- Begin calipmatch.sthlp -->/ r calipmatch.html' README.md
           rm calipmatch.html
 
-      - name: Check if dashboard has changed
-        run: echo "README_UNCHANGED=$(git diff --numstat | grep '^1\s*1\s*README\.md$' | wc -l)" >> $GITHUB_ENV
+      - name: Check if there are changes
+        run: |
+          set +e
+          test -z "$(git status --porcelain)"
+          echo "README_UPDATED=$?" >> $GITHUB_ENV
 
       - name: Push updated dashboard to Github
         run: |
@@ -62,4 +65,4 @@ jobs:
           git add README.md
           git commit -m "README: update embedded calipmatch.sthlp"
           git push
-        if: env.README_UNCHANGED == 0
+        if: env.README_UPDATED == 1
