@@ -16,7 +16,7 @@ jobs:
       #######################
 
       - name: Check out code repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Stata
         run: ./automation/install_stata.sh
