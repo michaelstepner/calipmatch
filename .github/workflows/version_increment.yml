@@ -59,13 +59,14 @@ jobs:
       - name: Validate ado-file version numbers are incremented
         run: |
           for b in "pr" "main"; do
-            ${b}_major=$(echo "${${b}_ado_version}" | sed -nE 's/([0-9]+)\.[0-9]+\.[0-9]+/\1/p')
-            ${b}_minor=$(echo "${${b}_ado_version}" | sed -nE 's/[0-9]+\.([0-9]+)\.[0-9]+/\1/p')
-            ${b}_patch=$(echo "${${b}_ado_version}" | sed -nE 's/[0-9]+\.[0-9]+\.([0-9]+)/\1/p')
+            v=${b}_ado_version
+            ${b}_major=$(echo "${!v}" | sed -nE 's/([0-9]+)\.[0-9]+\.[0-9]+/\1/p')
+            ${b}_minor=$(echo "${!v}" | sed -nE 's/[0-9]+\.([0-9]+)\.[0-9]+/\1/p')
+            ${b}_patch=$(echo "${!v}" | sed -nE 's/[0-9]+\.[0-9]+\.([0-9]+)/\1/p')
             echo ${b}
-            echo ${${b}_major}
-            echo ${${b}_minor}
-            echo ${${b}_patch}
+            echo "${!v}" | sed -nE 's/([0-9]+)\.[0-9]+\.[0-9]+/\1/p'
+            echo "${!v}" | sed -nE 's/[0-9]+\.([0-9]+)\.[0-9]+/\1/p'
+            echo "${!v}" | sed -nE 's/[0-9]+\.[0-9]+\.([0-9]+)/\1/p'
           done
           if [[ ! $pr_major -gt $main_major ]] && [[ ! $pr_minor -gt $main_minor ]] && [[ ! $pr_minor -gt $main_minor ]]; then
             echo "version number not incremented, pr=${pr_ado_version} main=${main_ado_version}"
