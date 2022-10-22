@@ -41,7 +41,7 @@ jobs:
           for b in "pr" "main"; do
             cd ${b}
             echo "${b}_ado_version=$(head -n 1 calipmatch.ado | sed -nE 's/.*version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')" >> $GITHUB_ENV
-            echo "${b}_ado_date=$(head -n 1 calipmatch.ado | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3][0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
+            echo "${b}_ado_date=$(head -n 1 calipmatch.ado | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3]?[0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
             cd ..
           done
 
@@ -82,7 +82,7 @@ jobs:
           for b in "pr" "main"; do
             cd ${b}
             echo "${b}_help_version=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')" >> $GITHUB_ENV
-            echo "${b}_help_date=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3][0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
+            echo "${b}_help_date=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3]?[0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
             cd ..
           done
 
