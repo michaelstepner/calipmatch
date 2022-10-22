@@ -57,6 +57,7 @@ jobs:
           fi
 
       - name: Validate ado-file version numbers are incremented
+        run: |
           for b in "pr" "main"; do
             ${b}_major=$(echo "${${b}_ado_version}" | sed -nE 's/([0-9]+)\.[0-9]+\.[0-9]+/\1/p')
             ${b}_minor=$(echo "${${b}_ado_version}" | sed -nE 's/[0-9]+\.([0-9]+)\.[0-9]+/\1/p')
@@ -96,6 +97,7 @@ jobs:
           fi
 
       - name: Validate help-file version numbers are match ado-file version numbers
+        run: |
           if [[ "$pr_ado_version" != "$pr_help_version" ]]; then
             echo "version numbers in calipmatch.ado and calipmatch.sthlp do not match, ado=${pr_ado_version} sthlp=${pr_help_version}"
             exit 1
