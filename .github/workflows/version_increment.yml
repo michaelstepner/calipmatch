@@ -1,0 +1,107 @@
+name: version_increment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - 'calipmatch.ado'
+      - 'calipmatch.sthlp'
+  workflow_dispatch:
+
+jobs:
+  version_increment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # change max time from default 6hr
+
+    steps:
+      #######################
+      # Configure
+      #######################
+
+      - name: Check out code repository, PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          path: repo_pr
+
+      - name: Check out repository, main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          path: repo_main
+
+      #######################
+      # ado-file version
+      #######################
+
+      - name: Obtain ado-file 'version number' and 'changed date' from each branch
+        run: |
+          for b in "pr" "main"; do
+            cd ${b}
+            echo "${b}_ado_version=$(head -n 1 calipmatch.ado | sed -nE 's/.*version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')" >> $GITHUB_ENV
+            echo "${b}_ado_date=$(head -n 1 calipmatch.ado | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3][0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
+            cd ..
+          done
+
+      - name: Validate ado-file version numbers exist
+        run: |
+          if [[ -z ${pr_ado_version} ]]; then
+            echo "PR branch: version number not detected in calipmatch.ado"
+            exit 1
+          fi
+          if [[ -z ${main_ado_version} ]]; then
+            echo "main branch: version number not detected in calipmatch.ado"
+            exit 1
+          fi
+
+      - name: Validate ado-file version numbers are incremented
+          for b in "pr" "main"; do
+            ${b}_major=$(echo "${${b}_ado_version}" | sed -nE 's/([0-9]+)\.[0-9]+\.[0-9]+/\1/p')
+            ${b}_minor=$(echo "${${b}_ado_version}" | sed -nE 's/[0-9]+\.([0-9]+)\.[0-9]+/\1/p')
+            ${b}_patch=$(echo "${${b}_ado_version}" | sed -nE 's/[0-9]+\.[0-9]+\.([0-9]+)/\1/p')
+            echo ${b}
+            echo ${${b}_major}
+            echo ${${b}_minor}
+            echo ${${b}_patch}
+          done
+          if [[ ! $pr_major -gt $main_major ]] && [[ ! $pr_minor -gt $main_minor ]] && [[ ! $pr_minor -gt $main_minor ]]; then
+            echo "version number not incremented, pr=${pr_ado_version} main=${main_ado_version}"
+            exit 1
+          fi
+
+      #######################
+      # help-file version
+      #######################
+
+      - name: Obtain help-file 'version number' and 'changed date' from each branch
+        run: |
+          for b in "pr" "main"; do
+            cd ${b}
+            echo "${b}_help_version=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')" >> $GITHUB_ENV
+            echo "${b}_help_date=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3][0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
+            cd ..
+          done
+
+      - name: Validate help-file version numbers exist
+        run: |
+          if [[ -z ${pr_help_version} ]]; then
+            echo "PR branch: version number not detected in calipmatch.sthlp"
+            exit 1
+          fi
+          if [[ -z ${main_help_version} ]]; then
+            echo "main branch: version number not detected in calipmatch.sthlp"
+            exit 1
+          fi
+
+      - name: Validate help-file version numbers are match ado-file version numbers
+          if [[ "$pr_ado_version" != "$pr_help_version" ]]; then
+            echo "version numbers in calipmatch.ado and calipmatch.sthlp do not match, ado=${pr_ado_version} sthlp=${pr_help_version}"
+            exit 1
+          fi
+          if [[ "$main_ado_version" != "$main_help_version" ]]; then
+            echo 'error in main branch:'
+            echo "version numbers in calipmatch.ado and calipmatch.sthlp do not match, ado=${main_ado_version} sthlp=${main_help_version}"
+            exit 1
+          fi
