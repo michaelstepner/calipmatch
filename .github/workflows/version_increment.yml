@@ -24,13 +24,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          path: repo_pr
+          path: pr
 
       - name: Check out repository, main branch
         uses: actions/checkout@v3
         with:
           ref: main
-          path: repo_main
+          path: main
 
       #######################
       # ado-file version
