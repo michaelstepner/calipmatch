@@ -22,6 +22,7 @@ jobs:
         run: ./automation/install_stata.sh
         env:
           OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
+          STATA_VERSION: 16
 
       #######################
       # Build
