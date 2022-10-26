@@ -125,5 +125,6 @@ jobs:
           head -n 2 calipmatch.ado
           echo ""
           head -n 2 calipmatch.sthlp
-          sed "${date_line}q;d" file.txt
+          echo ""
+          sed "${date_line}q;d" calipmatch.pkg
         working-directory: pr
