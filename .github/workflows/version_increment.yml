@@ -8,6 +8,7 @@ on:
     paths:
       - 'calipmatch.ado'
       - 'calipmatch.sthlp'
+      - 'calipmatch.pkg'
   workflow_dispatch:
 
 jobs:
