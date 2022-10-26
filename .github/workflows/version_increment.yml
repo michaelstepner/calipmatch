@@ -99,12 +99,17 @@ jobs:
       # Date last updated
       #######################
 
-      - name: Update date in ado-file and help-file
+      - name: Update date in ado-file, help-file and package-file
         run: |
           today=$(TZ=America/New_York date +%-d%b%Y | tr A-Z a-z)
+          today_pkgfmt=$(TZ=America/New_York date +%Y%-m%d)
           head -n 2 calipmatch.ado
           echo ""
           head -n 2 calipmatch.sthlp
+          echo ""
+          date_line=$(sed -n '/Distribution-Date:/=' file.txt)
+          pr_pkg_date=$(sed "${date_line}q;d" file.txt | sed -nE 's/.*Distribution-Date: ([0-3][0-9][0-9][0-9][0-1][0-9][0-3][0-9]).*/\1/p')
+          echo "$pr_pkg_date"
           echo ""
 
           if [[ "$pr_ado_date" != "$today" ]]; then
@@ -113,8 +118,12 @@ jobs:
           if [[ "$pr_help_date" != "$today" ]]; then
             sed -iE "2s/${pr_help_date}/${today}/" calipmatch.sthlp
           fi
+          if [[ "$pr_pkg_date" != "$today" ]]; then
+            sed -iE "${date_line}s/${pr_pkg_date}/${today}/" file.txt
+          fi
 
           head -n 2 calipmatch.ado
           echo ""
           head -n 2 calipmatch.sthlp
+          sed "${date_line}q;d" file.txt
         working-directory: pr
