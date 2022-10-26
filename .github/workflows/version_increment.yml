@@ -107,8 +107,8 @@ jobs:
           echo ""
           head -n 2 calipmatch.sthlp
           echo ""
-          date_line=$(sed -n '/Distribution-Date:/=' file.txt)
-          pr_pkg_date=$(sed "${date_line}q;d" file.txt | sed -nE 's/.*Distribution-Date: ([0-3][0-9][0-9][0-9][0-1][0-9][0-3][0-9]).*/\1/p')
+          date_line=$(sed -n '/Distribution-Date:/=' calipmatch.pkg)
+          pr_pkg_date=$(sed "${date_line}q;d" calipmatch.pkg | sed -nE 's/.*Distribution-Date: ([0-3][0-9][0-9][0-9][0-1][0-9][0-3][0-9]).*/\1/p')
           echo "$pr_pkg_date"
           echo ""
 
@@ -119,7 +119,7 @@ jobs:
             sed -iE "2s/${pr_help_date}/${today}/" calipmatch.sthlp
           fi
           if [[ "$pr_pkg_date" != "$today" ]]; then
-            sed -iE "${date_line}s/${pr_pkg_date}/${today}/" file.txt
+            sed -iE "${date_line}s/${pr_pkg_date}/${today}/" calipmatch.pkg
           fi
 
           head -n 2 calipmatch.ado
