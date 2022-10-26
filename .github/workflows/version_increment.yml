@@ -21,7 +21,7 @@ jobs:
       # Configure
       #######################
 
-      - name: Check out code repository, PR branch
+      - name: Check out repository, PR branch
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.ref }}
@@ -33,7 +33,7 @@ jobs:
           ref: main
           path: main
 
-      - name: Obtain ado-file 'version number' and 'changed date' from each branch
+      - name: Obtain 'version number' and 'changed date' from ado-file and help-file
         run: |
           for b in "pr" "main"; do
             cd ${b}
@@ -84,7 +84,7 @@ jobs:
             exit 1
           fi
 
-      - name: Validate help-file version numbers are match ado-file version numbers
+      - name: Validate help-file version numbers match ado-file version numbers
         run: |
           if [[ "$pr_ado_version" != "$pr_help_version" ]]; then
             echo "version numbers in calipmatch.ado and calipmatch.sthlp do not match, ado=${pr_ado_version} sthlp=${pr_help_version}"
