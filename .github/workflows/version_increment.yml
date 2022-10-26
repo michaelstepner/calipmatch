@@ -129,6 +129,7 @@ jobs:
           set +e
           test -z "$(git status --porcelain)"
           echo "FILES_UPDATED=$?" >> $GITHUB_ENV
+        working-directory: pr
 
       - name: Push updates to Github
         run: |
@@ -138,3 +139,4 @@ jobs:
           git commit -m "Update 'last updated' dates"
           git push
         if: env.FILES_UPDATED == 1
+        working-directory: pr
