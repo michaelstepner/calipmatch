@@ -342,8 +342,6 @@ gen byte age = 40
 replace case = 1 in 1
 
 replace income_percentile = 47 in 2
-
-replace income_percentile = 47 in 2
 replace income_percentile = 52 in 3
 replace income_percentile = 41 in 4
 replace income_percentile = 55 in 5
