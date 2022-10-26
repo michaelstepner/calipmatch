@@ -329,27 +329,27 @@ rcof `"test_calipmatch, gen(matchgroup) case(case) maxmatches(5) exactmatch(sex 
 	== 123
 
 *============================================================================
-* New dataset: two caliper matching variables, with different optimal ///
-  matches under different metrics
+* New dataset: two caliper matching variables, with different optimal
+*              matches under different distance metrics
 *============================================================================
 
 clear
 set obs 5
-gen byte case = 0
-gen byte income_percentile = 40
-gen byte age = 40
 
+gen byte case = 0
 replace case = 1 in 1
 
+gen byte income_percentile = 40
 replace income_percentile = 47 in 2
 replace income_percentile = 52 in 3
 replace income_percentile = 41 in 4
 replace income_percentile = 55 in 5
 
+gen byte age = 40
 replace age = 47 in 2
 replace age = 55 in 4
 
-gen sse = (income_percentile - income_percentile[1])^2 + (age - age[1])^2
+gen float sse = (income_percentile - income_percentile[1])^2 + (age - age[1])^2
 
 list 
 
@@ -358,7 +358,6 @@ list
 *----------------------------------------------------------------------------
 
 * matches minimize sum of squares
-
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
 	calipermatch(income_percentile age) caliperwidth(100 100) 
 
