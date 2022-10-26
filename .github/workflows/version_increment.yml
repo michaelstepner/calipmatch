@@ -1,0 +1,143 @@
+name: version_increment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - 'calipmatch.ado'
+      - 'calipmatch.sthlp'
+      - 'calipmatch.pkg'
+  workflow_dispatch:
+
+jobs:
+  version_increment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # change max time from default 6hr
+
+    steps:
+      #######################
+      # Configure
+      #######################
+
+      - name: Check out repository, PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          path: pr
+
+      - name: Check out repository, main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          path: main
+
+      - name: Obtain 'version number' and 'changed date' from ado-file and help-file
+        run: |
+          for b in "pr" "main"; do
+            cd ${b}
+            echo "${b}_ado_version=$(head -n 1 calipmatch.ado | sed -nE 's/.*version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')" >> $GITHUB_ENV
+            echo "${b}_ado_date=$(head -n 1 calipmatch.ado | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3]?[0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
+
+            echo "${b}_help_version=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')" >> $GITHUB_ENV
+            echo "${b}_help_date=$(sed '2q;d' calipmatch.sthlp | sed -nE 's/.*version [0-9]+\.[0-9]+\.[0-9]+ +([0-3]?[0-9][a-z][a-z][a-z][0-9][0-9][0-9][0-9]).*/\1/p')" >> $GITHUB_ENV
+            cd ..
+          done
+
+      #######################
+      # Version numbers
+      #######################
+
+      - name: Validate ado-file version numbers exist
+        run: |
+          if [[ -z ${pr_ado_version} ]]; then
+            echo "PR branch: version number not detected in calipmatch.ado"
+            exit 1
+          fi
+          if [[ -z ${main_ado_version} ]]; then
+            echo "main branch: version number not detected in calipmatch.ado"
+            exit 1
+          fi
+
+      - name: Validate help-file version numbers exist
+        run: |
+          if [[ -z ${pr_help_version} ]]; then
+            echo "PR branch: version number not detected in calipmatch.sthlp"
+            exit 1
+          fi
+          if [[ -z ${main_help_version} ]]; then
+            echo "main branch: version number not detected in calipmatch.sthlp"
+            exit 1
+          fi
+
+      - name: Validate ado-file version numbers are incremented
+        run: |
+          for b in "pr" "main"; do
+            v=${b}_ado_version
+            printf -v "${b}_major" "%s" "$(echo "${!v}" | sed -nE 's/([0-9]+)\.[0-9]+\.[0-9]+/\1/p')"
+            printf -v "${b}_minor" "%s" "$(echo "${!v}" | sed -nE 's/[0-9]+\.([0-9]+)\.[0-9]+/\1/p')"
+            printf -v "${b}_patch" "%s" "$(echo "${!v}" | sed -nE 's/[0-9]+\.[0-9]+\.([0-9]+)/\1/p')"
+          done
+          if [[ ! $pr_major -gt $main_major ]] && [[ ! $pr_minor -gt $main_minor ]] && [[ ! $pr_minor -gt $main_minor ]]; then
+            echo "version number not incremented, pr=${pr_ado_version} main=${main_ado_version}"
+            exit 1
+          fi
+
+      - name: Validate help-file version numbers match ado-file version numbers
+        run: |
+          if [[ "$pr_ado_version" != "$pr_help_version" ]]; then
+            echo "version numbers in calipmatch.ado and calipmatch.sthlp do not match, ado=${pr_ado_version} sthlp=${pr_help_version}"
+            exit 1
+          fi
+          if [[ "$main_ado_version" != "$main_help_version" ]]; then
+            echo 'error in main branch:'
+            echo "version numbers in calipmatch.ado and calipmatch.sthlp do not match, ado=${main_ado_version} sthlp=${main_help_version}"
+            exit 1
+          fi
+
+      #######################
+      # Date last updated
+      #######################
+
+      - name: Update date in ado-file and help-file
+        run: |
+          today=$(TZ=America/New_York date +%-d%b%Y | tr A-Z a-z)
+          if [[ "$pr_ado_date" != "$today" ]]; then
+            sed -i "1s/${pr_ado_date}/${today}/" calipmatch.ado
+          fi
+          if [[ "$pr_help_date" != "$today" ]]; then
+            sed -i "2s/${pr_help_date}/${today}/" calipmatch.sthlp
+          fi
+        working-directory: pr
+
+      - name: Update date in package-file
+        run: |
+          if grep -q '^d Distribution-Date: [0-9][0-9][0-9][0-9][0-1][0-9][0-3][0-9]' calipmatch.pkg; then
+            sed -i "s/^d Distribution-Date: [0-9][0-9][0-9][0-9][0-1][0-9][0-3][0-9]/d Distribution-Date: $(TZ=America/New_York date +%Y%m%d)/" calipmatch.pkg
+          else
+            echo "PR branch: Distribution-Date not detected in calipmatch.pkg"
+            exit 1
+          fi
+        working-directory: pr
+
+      #######################
+      # Push
+      #######################
+
+      - name: Check if there are changes
+        run: |
+          set +e
+          test -z "$(git status --porcelain)"
+          echo "FILES_UPDATED=$?" >> $GITHUB_ENV
+        working-directory: pr
+
+      - name: Push updates to Github
+        run: |
+          git config user.name OppInsights-Bot
+          git config user.email info@opportunityinsights.org
+          git add calipmatch.ado calipmatch.sthlp calipmatch.pkg
+          git commit -m "Update 'last updated' dates"
+          git push
+        if: env.FILES_UPDATED == 1
+        working-directory: pr

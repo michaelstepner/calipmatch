@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.1.0  10jun2022}{...}
+{* *! version 1.1.0  26oct2022}{...}
 {viewerjumpto "Syntax" "calipmatch##syntax"}{...}
 {viewerjumpto "Description" "calipmatch##description"}{...}
 {viewerjumpto "Options" "calipmatch##options"}{...}
