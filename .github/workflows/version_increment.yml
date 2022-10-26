@@ -123,23 +123,16 @@ jobs:
 
       - name: Update date in package-file
         run: |
-          today_pkgfmt=$(TZ=America/New_York date +%Y%-m%d)
-
           head -n 20 calipmatch.pkg | tail -n 5
           echo ""
 
-          date_line=$(sed -n '/Distribution-Date:/=' calipmatch.pkg)
-          pr_pkg_date=$(sed "${date_line}q;d" calipmatch.pkg | sed -nE 's/.*Distribution-Date: ([0-3][0-9][0-9][0-9][0-1][0-9][0-3][0-9]).*/\1/p')
-          echo "$pr_pkg_date"
-          echo ""
-
-          if [[ "$pr_pkg_date" != "$today_pkgfmt" ]]; then
-            sed -iE "${date_line}s/${pr_pkg_date}/${today_pkgfmt}/" calipmatch.pkg
+          if grep -q '^d Distribution-Date: [0-9][0-9][0-9][0-9][0-1][0-9][0-3][0-9]' calipmatch.pkg; then
+            sed -iE "s/^d Distribution-Date: [0-9][0-9][0-9][0-9][0-1][0-9][0-3][0-9]/d Distribution-Date: $(TZ=America/New_York date +%Y%m%d)/" calipmatch.pkg
+          else
+            echo "PR branch: Distribution-Date not detected in calipmatch.pkg"
+            exit 1
           fi
-
-          sed "${date_line}q;d" calipmatch.pkg
-          echo ""
-
+          
           head -n 20 calipmatch.pkg | tail -n 5
           echo ""
         working-directory: pr
