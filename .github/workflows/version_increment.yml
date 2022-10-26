@@ -102,37 +102,39 @@ jobs:
       - name: Update date in ado-file and help-file
         run: |
           today=$(TZ=America/New_York date +%-d%b%Y | tr A-Z a-z)
-
-          head -n 2 calipmatch.ado
-          echo ""
-          head -n 2 calipmatch.sthlp
-          echo ""
-
           if [[ "$pr_ado_date" != "$today" ]]; then
             sed -iE "1s/${pr_ado_date}/${today}/" calipmatch.ado
           fi
           if [[ "$pr_help_date" != "$today" ]]; then
             sed -iE "2s/${pr_help_date}/${today}/" calipmatch.sthlp
           fi
-
-          head -n 2 calipmatch.ado
-          echo ""
-          head -n 2 calipmatch.sthlp
-          echo ""
         working-directory: pr
 
       - name: Update date in package-file
         run: |
-          head -n 20 calipmatch.pkg | tail -n 5
-          echo ""
-
           if grep -q '^d Distribution-Date: [0-9][0-9][0-9][0-9][0-1][0-9][0-3][0-9]' calipmatch.pkg; then
             sed -iE "s/^d Distribution-Date: [0-9][0-9][0-9][0-9][0-1][0-9][0-3][0-9]/d Distribution-Date: $(TZ=America/New_York date +%Y%m%d)/" calipmatch.pkg
           else
             echo "PR branch: Distribution-Date not detected in calipmatch.pkg"
             exit 1
           fi
-          
-          head -n 20 calipmatch.pkg | tail -n 5
-          echo ""
         working-directory: pr
+
+      #######################
+      # Push
+      #######################
+
+      - name: Check if there are changes
+        run: |
+          set +e
+          test -z "$(git status --porcelain)"
+          echo "FILES_UPDATED=$?" >> $GITHUB_ENV
+
+      - name: Push updates to Github
+        run: |
+          git config user.name OppInsights-Bot
+          git config user.email info@opportunityinsights.org
+          git add calipmatch.ado calipmatch.sthlp calipmatch.pkg
+          git commit -m "Update 'last updated' dates"
+          git push
+        if: env.FILES_UPDATED == 1
