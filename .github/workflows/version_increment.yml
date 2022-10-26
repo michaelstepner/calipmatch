@@ -118,8 +118,8 @@ jobs:
           if [[ "$pr_help_date" != "$today" ]]; then
             sed -iE "2s/${pr_help_date}/${today}/" calipmatch.sthlp
           fi
-          if [[ "$pr_pkg_date" != "$today" ]]; then
-            sed -iE "${date_line}s/${pr_pkg_date}/${today}/" calipmatch.pkg
+          if [[ "$pr_pkg_date" != "$today_pkgfmt" ]]; then
+            sed -iE "${date_line}s/${pr_pkg_date}/${today_pkgfmt}/" calipmatch.pkg
           fi
 
           head -n 2 calipmatch.ado
