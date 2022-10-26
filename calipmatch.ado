@@ -1,4 +1,4 @@
-*! version 1.1.0  10jun2022  Michael Stepner and Allan Garland, software@michaelstepner.com
+*! version 1.1.0  26oct2022  Michael Stepner and Allan Garland, software@michaelstepner.com
 
 /* CC0 license information:
 To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
