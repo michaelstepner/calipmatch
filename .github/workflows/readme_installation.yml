@@ -1,0 +1,86 @@
+name: readme_installation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+
+jobs:
+  readme_installation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # change max time from default 6hr
+
+    steps:
+      #######################
+      # Configure
+      #######################
+
+      - name: Check out code repository (main branch)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.base_ref }}
+        if: github.event.pull_request.merged == true
+
+      - name: Check out code repository (head branch)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+        if: github.event.pull_request.merged != true
+
+      #######################
+      # Build
+      #######################
+
+      - name: Write installation instructions (main branch)
+        run: |
+          cat > readme_installation_instructions.md <<"EOL"
+          Install **calipmatch** in Stata from the SSC repository:
+          ```
+          ssc install calipmatch
+          ```
+
+          Or you can install **calipmatch** in Stata directly from this Github repository:
+          ```
+          net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/main)
+          ```
+          EOL
+        if: github.event.pull_request.merged == true
+
+      - name: Write installation instructions (head branch)
+        run: |
+          cat > readme_installation_instructions.md <<"EOL"
+          This development version of **calipmatch** can be installed using:
+          ```
+          net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/${GITHUB_HEAD_REF})
+          ```
+          EOL
+ 
+          sed -i "s/\${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}/" readme_installation_instructions.md
+        if: github.event.pull_request.merged != true
+
+      - name: Place installation instructions in README.md
+        run: |
+          sed -z -i 's/<!-- Begin installation instructions -->.*<!-- End installation instructions -->/<!-- Begin installation instructions -->\n\n<!-- End installation instructions -->/' README.md
+          sed -i '/<!-- Begin installation instructions -->/ r readme_installation_instructions.md' README.md
+          rm readme_installation_instructions.md
+
+      #######################
+      # Push
+      #######################
+
+      - name: Check if there are changes
+        run: |
+          set +e
+          test -z "$(git status --porcelain)"
+          echo "README_UPDATED=$?" >> $GITHUB_ENV
+
+      - name: Push updated README to Github
+        run: |
+          git config user.name OppInsights-Bot
+          git config user.email info@opportunityinsights.org
+          git pull --ff-only
+          git add README.md
+          git commit -m "README: update installation instructions"
+          git push
+        if: env.README_UPDATED == 1
