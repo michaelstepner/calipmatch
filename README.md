@@ -1,16 +1,18 @@
 ## Installation
 
+<!-- Begin installation instructions -->
 This development version of **calipmatch** can be installed using:
 
 ```
 net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/develop)
 ```
+<!-- End installation instructions -->
 
 ## Stata help file
 
 This documentation was converted automatically from the Stata help file by running `log html calipmatch.sthlp calipmatch.html` in Stata.
 
-The help file looks best when viewed in Stata using `help calipmatch`.
+The help file can be explored interactively in Stata using `help calipmatch`.
 
 <!-- Begin calipmatch.sthlp -->
 <pre>
