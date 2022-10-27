@@ -1,4 +1,4 @@
-*! version 1.0.0  9may2017  Michael Stepner and Allan Garland, stepner@mit.edu
+*! version 1.1.0  26oct2022  Michael Stepner and Allan Garland, software@michaelstepner.com
 
 /* CC0 license information:
 To the extent possible under law, the author has dedicated all copyright and related and neighboring rights
@@ -12,14 +12,12 @@ human-readable summary can be accessed at http://creativecommons.org/publicdomai
 
 program define calipmatch, sortpreserve rclass
 	version 13.0
-	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(integer) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
+	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
 		
 	* Verify there are same number of caliper vars as caliper widths
-	local caliper_var_count : word count `calipermatch'
-	local caliper_width_count : word count `caliperwidth'
-	if (`caliper_var_count'!=`caliper_width_count') {
+	if (`: word count `calipermatch'' != `: word count `caliperwidth'') {
 		di as error "must specify the same number of caliper widths as caliper matching variables."
-		if (`caliper_var_count'<`caliper_width_count') exit 123
+		if (`: word count `calipermatch'' < `: word count `caliperwidth'') exit 123
 		else exit 122
 	}
 	
@@ -82,18 +80,18 @@ program define calipmatch, sortpreserve rclass
 		exit 2001
 	}
 	
-	* Find group boundaries 
+	* Find group boundaries within exact-match groups
 	mata: boundaries=find_group_boundaries("`exactmatch'", "`casevar'", `=_N-`insample_total'+1', `=_N')
 	
-	* Perform matching within each group
-	qui gen long `generate'=.
+	* Perform caliper matching within each exact-match group
+	qui gen long `generate' = .
 	tempname case_matches
 	
 	if r(no_matches)==0 {
 		mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")
 		qui compress `generate'
 		
-		matrix `case_matches'=r(matchsuccess)
+		matrix `case_matches' = r(matchsuccess)
 		matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
 	}
 	else {
@@ -136,6 +134,22 @@ set matastrict on
 mata:
 
 void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxmatch, string scalar calipvars, string scalar calipwidth) {
+	// Objective:
+	//		Perform caliper matching using the specified caliper variables and caliper widths, matching each case observation to one or
+	//		many controls. Identify the matches within pre-specified groups, and store a variable containing integers that define a group
+	//		of matched cases and controls.
+	//
+	// Inputs:
+	//		Dataset with the same sort order as it had when `find_group_boundaries`' was run.
+	//		- boundaries: G x 4 matrix output by find_group_boundaries()
+	//		- genvar: variable containing all missing values, which will be populated with matching groups
+	//		- maxmatch: a positive integer indicating the maximum number of control obs to match to each case obs
+	//		- calipvars: a list of numeric variables for caliper matching
+	//		- calipwidth: a list of caliper widths, specifying the maximum distance between case and control variables in each calipvar
+	//
+	//	Outputs:
+	//		The values of "genvar" are filled with integers that describe each group of matched cases and controls.
+	//		- r(matchsuccess) is a Stata return matrix tabulating the number of cases successfully matched to {1, ..., maxmatch} controls
 
 	real scalar matchgrp
 	matchgrp = st_varindex(genvar)
@@ -148,52 +162,77 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	
 	real scalar curmatch
 	curmatch = 0
+
+	real scalar highestmatch
+	highestmatch = 0
 	
 	real colvector matchsuccess
 	matchsuccess = J(maxmatch, 1, 0)
 	
 	real scalar brow
+	real rowvector casematchcount
+	real scalar caseindex
+	real colvector matchedcontrolindex
+	real matrix minties
 	real scalar caseobs
 	real scalar controlobs
-	real scalar casematchcount
+	real scalar matchattempt
 	real rowvector matchvals
-	real rowvector controlvals
-	real matrix matchbounds
+	real matrix controlvals
+	real matrix diffvals
 	
 	for (brow=1; brow<=rows(boundaries); brow++) {
 	
-		for (caseobs=boundaries[brow,3]; caseobs<=boundaries[brow,4]; caseobs++) {
-		
-			curmatch++
-			casematchcount=0
-			_st_store(caseobs, matchgrp, curmatch)
+		casematchcount = J(boundaries[brow,4] - boundaries[brow,3] + 1, 1, 0)
+	
+		for (matchattempt=1; matchattempt<=maxmatch; matchattempt++) {
+	
+			for (caseobs=boundaries[brow,3]; caseobs<=boundaries[brow,4]; caseobs++) {
 			
-			matchvals = st_data(caseobs, matchvars)
-			matchbounds = (matchvals-tolerance)\(matchvals+tolerance)
+				caseindex = caseobs - boundaries[brow,3] + 1
 			
-			for (controlobs=boundaries[brow,1]; controlobs<=boundaries[brow,2]; controlobs++) {
-			
-				if (_st_data(controlobs, matchgrp)!=.) continue
-				
-				controlvals = st_data(controlobs, matchvars)
-				
-				if (controlvals>=matchbounds[1,.] & controlvals<=matchbounds[2,.]) {
-					casematchcount++
-					_st_store(controlobs, matchgrp, curmatch)
+				// Set the value of the match group
+				if (matchattempt==1) {
+					highestmatch++
+					curmatch = highestmatch
+					_st_store(caseobs, matchgrp, curmatch)
+				}
+				else {
+					if (casematchcount[caseindex,1] < matchattempt - 1) continue
+					curmatch = _st_data(caseobs, matchgrp)
 				}
 				
-				if (casematchcount==maxmatch) break
+				// Store matchvar values for the case and for the controls that have not yet been matched
+				matchvals = st_data(caseobs, matchvars)
+				controlvals = st_data((boundaries[brow,1], boundaries[brow,2]), matchvars) :* editvalue(st_data((boundaries[brow,1], boundaries[brow,2]), matchgrp):==., 0, .)
+				
+				// Store difference in matchvar values if they are within tolerance
+				diffvals = (controlvals :- matchvals)
+				diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
+				
+				// Find closest control to match
+				minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
+				
+				// If a match is found, store it
+				if (rows(matchedcontrolindex)>0) {
+					casematchcount[caseindex,1] = casematchcount[caseindex,1] + 1
+					_st_store(boundaries[brow,1] + matchedcontrolindex[1,1] - 1, matchgrp, curmatch)
+				}
+				
+				// If zero matches were found for a case, remove its matchgrp value and reuse it for the next case
+				if (matchattempt==1 & casematchcount[caseindex,1]==0) {
+					highestmatch--
+					_st_store(caseobs, matchgrp, .)
+				}
 			
 			}
-			
-			if (casematchcount==0) {
-				curmatch--
-				_st_store(caseobs, matchgrp, .)
-			}
-			else {
-				matchsuccess[casematchcount,1] = matchsuccess[casematchcount,1]+1
-			}
+		}
 		
+		for (caseindex=1; caseindex <= boundaries[brow,4] - boundaries[brow,3] + 1; caseindex++) {
+			matchattempt = casematchcount[caseindex,1]
+			if (matchattempt > 0) {
+				matchsuccess[matchattempt,1] = matchsuccess[matchattempt,1] + 1
+			}
 		}
 	
 	}
@@ -204,6 +243,24 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 }
 
 real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, real scalar startobs, real scalar endobs) {
+	// Objective:
+	//		For each set of distinct values of "grpvars", identify the starting and ending observation for cases and controls.
+	//
+	// Inputs:
+	//		Dataset sorted by the variables specified by "grpvars casevar" within the rows [startobs, endobs]
+	//
+	//		- grpvars: one or more variables for which each distinct set of values constitutes a group
+	//		- casevar: a variable which takes values {0,1}
+	//		- startobs: the first observation to process
+	//		- endobs: the last observation to process
+	//
+	//	Outputs:
+	//		Return a matrix with dimensions G x 4, where G is the number of distinct groups containing both cases and controls.
+	//		Col 1 = the first obs in a group with casevar==0
+	//		Col 2 = the last obs in a group with casevar==0
+	//		Col 3 = the first obs in a group with casevar==1
+	//		Col 4 = the last obs in a group with casevar==1
+
 
 	real matrix boundaries
 	boundaries = (startobs, ., ., .)
@@ -229,9 +286,9 @@ real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, 
 				nextcol=2
 				currow=currow+1
 			}
-			else {  // only one value of casevar in prev group --> skip group
+			else {  // only one value of casevar (all controls or all cases) in prev group --> skip group
 				boundaries[currow,1]=obs
-			} 
+			}
 		}
 		else if (_st_data(obs, casevarnum)!=_st_data(obs-1, casevarnum)) {
 			boundaries[currow,2]=obs-1
@@ -247,10 +304,8 @@ real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, 
 		return (boundaries)
 	}
 	else {
-	
 		if (currow>1) return (boundaries[1..rows(boundaries)-1, .])
 		else st_numscalar("r(no_matches)",1)
-	
 	}
 
 }

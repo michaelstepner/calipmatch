@@ -1,0 +1,67 @@
+name: readme_sthlp
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'calipmatch.sthlp'
+  workflow_dispatch:
+
+jobs:
+  readme_sthlp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # change max time from default 6hr
+
+    steps:
+      #######################
+      # Configure
+      #######################
+
+      - name: Check out code repository (main branch)
+        uses: actions/checkout@v3
+        if: github.ref == 'refs/heads/main'
+
+      - name: Check out code repository (PR branch)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+        if: github.ref != 'refs/heads/main'
+
+      - name: Install Stata
+        run: ./automation/install_stata.sh
+        env:
+          OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
+          STATA_VERSION: 16
+
+      #######################
+      # Build
+      #######################
+
+      - name: Convert Stata help file to HTML
+        run: stata-mp log html calipmatch.sthlp calipmatch.html
+
+      - name: Place Stata help file in README.md
+        run: |
+          sed -z -i 's/<!-- Begin calipmatch.sthlp -->.*<!-- End calipmatch.sthlp -->/<!-- Begin calipmatch.sthlp -->\n\n<!-- End calipmatch.sthlp -->/' README.md
+          sed -i '/<!-- Begin calipmatch.sthlp -->/ r calipmatch.html' README.md
+          rm calipmatch.html
+
+      #######################
+      # Push
+      #######################
+
+      - name: Check if there are changes
+        run: |
+          set +e
+          test -z "$(git status --porcelain)"
+          echo "README_UPDATED=$?" >> $GITHUB_ENV
+
+      - name: Push updated README to Github
+        run: |
+          git config user.name OppInsights-Bot
+          git config user.email info@opportunityinsights.org
+          git pull --ff-only
+          git add README.md
+          git commit -m "README: update embedded calipmatch.sthlp"
+          git push
+        if: env.README_UPDATED == 1

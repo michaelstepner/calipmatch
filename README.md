@@ -1,13 +1,20 @@
 ## Installation
 
-Install **calipmatch** in Stata from the SSC repository: `ssc install calipmatch`
+<!-- Begin installation instructions -->
+This development version of **calipmatch** can be installed using:
+```
+net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/develop)
+```
+
+<!-- End installation instructions -->
 
 ## Stata help file
 
-This documentation was converted automatically from the Stata help file by running `log html calipmatch.sthlp calipmatch.md` in Stata.
+This documentation was converted automatically from the Stata help file by running `log html calipmatch.sthlp calipmatch.html` in Stata.
 
-The help file looks best when viewed in Stata using `help calipmatch`.
+The help file can be explored interactively in Stata using `help calipmatch`.
 
+<!-- Begin calipmatch.sthlp -->
 <pre>
 <b><u>Title</u></b>
 <p>
@@ -44,7 +51,7 @@ The help file looks best when viewed in Stata using `help calipmatch`.
 <p>
     <b>calipmatch</b> matches case observations to control observations using
     "calipers", generating a new variable with a unique value for each group
-    of matched cases and controls.  It performs 1:1 or 1:m matching without
+    of matched cases and controls. It performs 1:1 or 1:m matching without
     replacement.
 <p>
     Matched observations must have values within +/- the caliper width for
@@ -52,12 +59,18 @@ The help file looks best when viewed in Stata using `help calipmatch`.
     identical values for every exact matching variable, if any exact matching
     variables are specified.
 <p>
-    Controls are randomly matched to cases without replacement. For each
-    case, <b>calipmatch</b> searches for matching controls until it either finds the
-    pre-specified maximum number of matches or runs out of controls. The
-    search is performed greedily: it is possible that some cases end up
-    unmatched because all possible matching controls have already been
-    matched with another case.
+    Controls are matched to cases without replacement, using an efficient
+    (greedy) algorithm that approximately maximizes the number of successful
+    matches, while minimizing the sum of squared differences in the caliper
+    matching variables when multiple valid matches exist.
+<p>
+    The cases are processed in random order. For each case, <b>calipmatch</b>
+    searches for matching controls. If any valid matches exist, it selects
+    the matching control which minimizes the sum of squared differences
+    across caliper matching variables. If <b>maxmatches(</b><i>#</i><b>)</b>&gt;1, then after
+    completing the search for a first matching control observation for each
+    case, the algorithm will search for a second matching control observation
+    for each case, etc.
 <p>
 <p>
 <a name="options"></a><b><u>Options</u></b>
@@ -78,16 +91,12 @@ The help file looks best when viewed in Stata using `help calipmatch`.
         a missing value are excluded from matching.
 <p>
     <b><u>max</u></b><b>matches(</b><i>#</i><b>)</b> sets the maximum number of controls to be matched with each
-        case. Setting <b>maxmatches(</b><i>1</i><b>)</b> performs a 1:1 matching: <b>calipmatch</b>
+        case. Setting <b>maxmatches(</b><i>1</i><b>)</b> performs a 1:1 match where <b>calipmatch</b>
         searches for one matching control observation for each case
-        observation.
-<p>
-        By setting <b>maxmatches(</b><i>#</i><b>)</b> greater than 1, <b>calipmatch</b> will proceed in
-        random order through the cases and search for matching control
-        observations until it either finds the maximum number of matches or
-        runs out of controls. The search is performed greedily: it is
-        possible that some cases end up unmatched because all possible
-        matching controls have already been matched with another case.
+        observation. By setting <b>maxmatches(</b><i>#</i><b>)</b> greater than 1 <b>calipmatch</b> will
+        try to assign a first valid matching control observation for every
+        case observation, then search for a second matching control
+        observation, and onward.
 <p>
     <b><u>caliperm</u></b><b>atch(</b><i>varlist</i><b>)</b> is a list of one or more numeric variables to use
         for caliper matching. Matched observations must have values within
@@ -126,12 +135,12 @@ The help file looks best when viewed in Stata using `help calipmatch`.
 <p>
 <a name="author"></a><b><u>Authors</u></b>
 <p>
-    Michael Stepner
-    Massachusetts Institute of Technology
-    stepner@mit.edu
+    <b>Michael Stepner</b>
+    software@michaelstepner.com
 <p>
-    Allan Garland, M.D. M.A.
+    <b>Allan Garland</b>
     University of Manitoba Faculty of Medicine
     agarland@hsc.mb.ca
 <p>
 </pre>
+<!-- End calipmatch.sthlp -->

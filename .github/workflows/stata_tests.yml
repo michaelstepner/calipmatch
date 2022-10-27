@@ -1,6 +1,8 @@
 name: stata_tests
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
@@ -9,5 +11,28 @@ jobs:
     timeout-minutes: 30 # change max time from default 6hr
 
     steps:
-      - name: Hello World
-        run: echo "Hello World"
+      #######################
+      # Configure
+      #######################
+
+      - name: Check out code repository
+        uses: actions/checkout@v3
+
+      - name: Install Stata
+        run: ./automation/install_stata.sh
+        env:
+          OI_HTTPS_PW: ${{ secrets.OI_HTTPS_PW }}
+          STATA_VERSION: 16
+
+      #######################
+      # Build
+      #######################
+
+      - name: Run tests
+        run: |
+          stata-mp -b do test_calipmatch.do
+          cat test_calipmatch.log
+          if egrep --before-context=1 --max-count=1 "^r\([0-9]+\);$" test_calipmatch.log
+          then
+              exit 1
+          fi
