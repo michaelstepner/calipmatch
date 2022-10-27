@@ -1,6 +1,10 @@
 ## Installation
 
 <!-- Begin installation instructions -->
+This development version of **calipmatch** can be installed using:
+```
+net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/readme_install_instructions)
+```
 
 <!-- End installation instructions -->
 
