@@ -34,7 +34,7 @@ jobs:
 
       - name: Write installation instructions (main branch)
         run: |
-          cat > readme_installation_instructions.md <<EOL
+          cat > readme_installation_instructions.md <<"EOL"
           Install **calipmatch** in Stata from the SSC repository:
           ```
           ssc install calipmatch
@@ -49,12 +49,14 @@ jobs:
 
       - name: Write installation instructions (head branch)
         run: |
-          cat > readme_installation_instructions.md <<EOL
+          cat > readme_installation_instructions.md <<"EOL"
           This development version of **calipmatch** can be installed using:
           ```
           net install calipmatch, from(https://github.com/michaelstepner/calipmatch/raw/${GITHUB_HEAD_REF})
           ```
           EOL
+ 
+          sed -i "s/\${GITHUB_HEAD_REF}/${GITHUB_HEAD_REF}/" readme_installation_instructions.md
         if: github.event.pull_request.merged != true
 
       - name: Place installation instructions in README.md
