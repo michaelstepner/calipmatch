@@ -62,7 +62,7 @@ jobs:
       - name: Place installation instructions in README.md
         run: |
           sed -z -i 's/<!-- Begin installation instructions -->.*<!-- End installation instructions -->/<!-- Begin installation instructions -->\n\n<!-- End installation instructions -->/' README.md
-          sed -i '/<!-- Begin installation instructions -->/ r calipmatch.html' README.md
+          sed -i '/<!-- Begin installation instructions -->/ r readme_installation_instructions.md' README.md
           rm readme_installation_instructions.md
 
       #######################
