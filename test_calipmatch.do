@@ -369,6 +369,25 @@ assert matchgroup == . in 3/5
 
 keep case income_percentile age
 
+* matches minimize sum of normalized squares
+replace age = 1000*age
+egen std_income_percentile = std(income_percentile)
+egen std_age = std(age)
+
+gen float sse = (income_percentile - income_percentile[1])^2 + (age - age[1])^2
+gen float std_sse = (std_income_percentile - std_income_percentile[1])^2 + (std_age - std_age[1])^2
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age) caliperwidth(100 100000)
+
+sum std_sse if case==0, meanonly
+assert cond(_n==2, std_sse==r(min), std_sse!=r(min))  // test that obs 2 is global min
+
+assert matchgroup == 1 in 2  // test that obs 2 is matched
+assert matchgroup == . in 3/5
+
+keep case income_percentile age
+
 *----------------------------------------------------------------------------
 
 di "Successfully completed all tests."
