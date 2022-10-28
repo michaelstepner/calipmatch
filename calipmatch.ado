@@ -158,6 +158,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	//		- maxmatch: a positive integer indicating the maximum number of control obs to match to each case obs
 	//		- calipvars: a list of numeric variables for caliper matching
 	//		- calipwidth: a list of caliper widths, specifying the maximum distance between case and control variables in each calipvar
+	//		- std_calipvars (optional): a list of numeric variables for caliper matching, but standardized by the in-sample mean and s.d.
 	//
 	//	Outputs:
 	//		The values of "genvar" are filled with integers that describe each group of matched cases and controls.
