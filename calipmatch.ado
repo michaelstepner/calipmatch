@@ -192,6 +192,15 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	real rowvector matchvals
 	real matrix controlvals
 	real matrix diffvals
+
+	if (args() > 5) {
+		real rowvector std_matchvars
+		std_matchvars = st_varindex(tokens(std_calipvars))
+		
+		real rowvector std_matchvals
+		real matrix std_controlvals
+		real matrix std_diffvals
+	}
 	
 	for (brow=1; brow<=rows(boundaries); brow++) {
 	
@@ -214,16 +223,22 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 					curmatch = _st_data(caseobs, matchgrp)
 				}
 				
-				// Store matchvar values for the case and for the controls that have not yet been matched
+				// Store matchvar values for the case and for the controls that have not yet been matched, and calculate difference
 				matchvals = st_data(caseobs, matchvars)
 				controlvals = st_data((boundaries[brow,1], boundaries[brow,2]), matchvars) :* editvalue(st_data((boundaries[brow,1], boundaries[brow,2]), matchgrp):==., 0, .)
-				
-				// Store difference in matchvar values if they are within tolerance
 				diffvals = (controlvals :- matchvals)
-				diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
-				
+
 				// Find closest control to match
-				minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
+				if (args() >5) {
+					std_matchvals = st_data(caseobs, std_matchvars)
+					std_controlvals = st_data((boundaries[brow,1], boundaries[brow,2]), std_matchvars) :* editvalue(st_data((boundaries[brow,1], boundaries[brow,2]), matchgrp):==., 0, .)
+					std_diffvals = (std_controlvals :- std_matchvals) :* editvalue(abs(diffvals) :<= tolerance, 0, .)
+					minindex(rowsum(std_diffvals :^2, 1), 1, matchedcontrolindex, minties)
+				}
+				else {
+					diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
+					minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
+				}
 				
 				// If a match is found, store it
 				if (rows(matchedcontrolindex)>0) {
