@@ -12,7 +12,7 @@ human-readable summary can be accessed at http://creativecommons.org/publicdomai
 
 program define calipmatch, sortpreserve rclass
 	version 13.0
-	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
+	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)] [brief]
 		
 	* Verify there are same number of caliper vars as caliper widths
 	if (`: word count `calipermatch'' != `: word count `caliperwidth'') {
@@ -88,9 +88,20 @@ program define calipmatch, sortpreserve rclass
 	tempname case_matches
 	
 	if r(no_matches)==0 {
-		mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")
+
+		if ("`brief'"=="") {
+			foreach var of varlist `calipermatch' {
+				tempvar std_`var'
+				qui egen `std_`var'' = std(`var') if `touse' == 1
+				local std_calipermatch `std_calipermatch' `std_`var''
+			}
+			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'", "`std_calipermatch'")	
+		}	
+		else {
+			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")			
+		}
+
 		qui compress `generate'
-		
 		matrix `case_matches' = r(matchsuccess)
 		matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
 	}
@@ -133,7 +144,8 @@ set matastrict on
 
 mata:
 
-void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxmatch, string scalar calipvars, string scalar calipwidth) {
+void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxmatch, string scalar calipvars, string scalar calipwidth,
+| string scalar std_calipvars) {
 	// Objective:
 	//		Perform caliper matching using the specified caliper variables and caliper widths, matching each case observation to one or
 	//		many controls. Identify the matches within pre-specified groups, and store a variable containing integers that define a group
