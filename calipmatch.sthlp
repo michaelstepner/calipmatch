@@ -44,6 +44,7 @@ matching{p_end}
 
 {syntab :Optional}
 {synopt :{opth exactm:atch(varlist)}}list of integer variables to match on exactly{p_end}
+{synopt :{opth nostandard(varlist)}} distance using sum of squares; default is standardized sum of squares {p_end}
 {synoptline}
 
 
@@ -67,7 +68,7 @@ variables when multiple valid matches exist.
 
 {pstd}
 The cases are processed in random order. For each case, {cmd:calipmatch} searches for matching controls. If
-any valid matches exist, it selects the matching control which minimizes the sum of squared differences across
+any valid matches exist, it selects the matching control which minimizes the standardized sum of squared differences across
 caliper matching variables. If {opt maxmatches(#)}>1, then after completing the search for a first matching
 control observation for each case, the algorithm will search for a second matching control observation for
 each case, etc.
@@ -115,6 +116,8 @@ matching variables, they must also have identical values for every exact matchin
 {it:int} or {it:long}. This enables speedy exact matching, by ensuring that
 all values are stored as precise integers.
 
+{phang}{opth nostandard} calculates distance between cases and controls using the sum of squares.
+When specified, matches will be sensitive to the scale of caliper variables. This can be used to weight caliper variables.
 
 {marker saved_results}{...}
 {title:Saved results}
