@@ -9,7 +9,7 @@ program define test_calipmatch
 	if (_rc==0) {
 	
 		* Assign arguments to locals using the same syntax as calipmatch
-		syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) nostandardize]
+		syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) NOstandardize]
 	
 		* Store returned objects
 		local cases_total = r(cases_total)
@@ -345,40 +345,23 @@ replace income_percentile = 52 in 3
 replace income_percentile = 41 in 4
 replace income_percentile = 55 in 5
 
-gen byte age = 40
-replace age = 47 in 2
-replace age = 55 in 4
-
-gen float sse = (income_percentile - income_percentile[1])^2 + (age - age[1])^2
-
-list 
-
+gen int age_days = 14600
+replace age_days = 17155 in 2
+replace age_days = 20075 in 4
+ 
 *----------------------------------------------------------------------------
 * Valid inputs, test performance of matching algorithm 
 *----------------------------------------------------------------------------
 
-* matches minimize sum of squares
-test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
-	calipermatch(income_percentile age) caliperwidth(100 100) 
-
-sum sse if case==0, meanonly
-assert cond(_n==2, sse==r(min), sse!=r(min))  // test that obs 2 is global min
-
-assert matchgroup == 1 in 2  // test that obs 2 is matched
-assert matchgroup == . in 3/5
-
-keep case income_percentile age
-
 * matches minimize sum of normalized squares
-replace age = 1000*age
 egen std_income_percentile = std(income_percentile)
-egen std_age = std(age)
+egen std_age_days = std(age_days)
 
-gen float sse = (income_percentile - income_percentile[1])^2 + (age - age[1])^2
-gen float std_sse = (std_income_percentile - std_income_percentile[1])^2 + (std_age - std_age[1])^2
+gen float std_sse = (std_income_percentile - std_income_percentile[1])^2 + (std_age_days - std_age_days[1])^2
+list 
 
 test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
-	calipermatch(income_percentile age) caliperwidth(100 100000)
+	calipermatch(income_percentile age_days) caliperwidth(100 36500)
 
 sum std_sse if case==0, meanonly
 assert cond(_n==2, std_sse==r(min), std_sse!=r(min))  // test that obs 2 is global min
@@ -386,7 +369,23 @@ assert cond(_n==2, std_sse==r(min), std_sse!=r(min))  // test that obs 2 is glob
 assert matchgroup == 1 in 2  // test that obs 2 is matched
 assert matchgroup == . in 3/5
 
-keep case income_percentile age
+keep case income_percentile age_days
+
+* matches minimize sum of squares when nostandardize is specified
+gen float sse = (income_percentile - income_percentile[1])^2 + (age_days - age_days[1])^2
+list 
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age_days) caliperwidth(100 36500) nostandardize
+
+sum sse if case==0, meanonly
+assert cond(_n==3, sse==r(min), sse!=r(min))  // test that obs 3 is global min
+
+assert matchgroup == 1 in 3  // test that obs 3 is matched
+assert matchgroup == . in 2
+assert matchgroup == . in 4/5
+
+keep case income_percentile age_days
 
 *----------------------------------------------------------------------------
 
