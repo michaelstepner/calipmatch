@@ -44,7 +44,7 @@ matching{p_end}
 
 {syntab :Optional}
 {synopt :{opth exactm:atch(varlist)}}list of integer variables to match on exactly{p_end}
-{synopt :{opth nostandard(varlist)}} distance using sum of squares; default is standardized sum of squares {p_end}
+{synopt :{bf:nostandard}} distance using sum of squares; default is standardized sum of squares {p_end}
 {synoptline}
 
 
@@ -116,7 +116,7 @@ matching variables, they must also have identical values for every exact matchin
 {it:int} or {it:long}. This enables speedy exact matching, by ensuring that
 all values are stored as precise integers.
 
-{phang}{opth nostandard} calculates distance between cases and controls using the sum of squares.
+{phang}{bf:nostandard} calculates distance between cases and controls using the sum of squares.
 When specified, matches will be sensitive to the scale of caliper variables. This can be used to weight caliper variables.
 
 {marker saved_results}{...}
