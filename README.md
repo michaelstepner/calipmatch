@@ -26,7 +26,7 @@ The help file can be explored interactively in Stata using `help calipmatch`.
 <p>
         <b>calipmatch</b> [<i>if</i>] [<i>in</i>]<b>,</b> <b><u>gen</u></b><b>erate(</b><i>newvar</i><b>)</b> <b><u>case</u></b><b>var(</b><i>varname</i><b>)</b> <b><u>max</u></b><b>matches(</b><i>#</i><b>)</b>
                <b><u>caliperm</u></b><b>atch(</b><i>varlist</i><b>)</b> <b><u>caliperw</u></b><b>idth(</b><i>numlist</i><b>)</b> [<b><u>exactm</u></b><b>atch(</b>
-               <i>varlist</i><b>)</b>]
+               <i>varlist</i><b>)</b><b><u> no</u></b><b>standardize</b>]
 <p>
 <p>
     <i>options</i>                  Description
@@ -44,6 +44,8 @@ The help file can be explored interactively in Stata using `help calipmatch`.
 <p>
     Optional
       <b><u>exactm</u></b><b>atch(</b><i>varlist</i><b>)</b>    list of integer variables to match on exactly
+      <b><u>no</u></b><b>standardize</b>           distance using sum of squares; default is
+                               standardized sum of squares
     -------------------------------------------------------------------------
 <p>
 <p>
@@ -66,11 +68,11 @@ The help file can be explored interactively in Stata using `help calipmatch`.
 <p>
     The cases are processed in random order. For each case, <b>calipmatch</b>
     searches for matching controls. If any valid matches exist, it selects
-    the matching control which minimizes the sum of squared differences
-    across caliper matching variables. If <b>maxmatches(</b><i>#</i><b>)</b>&gt;1, then after
-    completing the search for a first matching control observation for each
-    case, the algorithm will search for a second matching control observation
-    for each case, etc.
+    the matching control which minimizes the standardized sum of squared
+    differences across caliper matching variables. If <b>maxmatches(</b><i>#</i><b>)</b>&gt;1, then
+    after completing the search for a first matching control observation for
+    each case, the algorithm will search for a second matching control
+    observation for each case, etc.
 <p>
 <p>
 <a name="options"></a><b><u>Options</u></b>
@@ -119,6 +121,10 @@ The help file can be explored interactively in Stata using `help calipmatch`.
         This enables speedy exact matching, by ensuring that all values are
         stored as precise integers.
 <p>
+    <b><u>no</u></b><b>standardize</b> calculates distance between cases and controls using the
+        sum of squared differences.  When specified, matches will be
+        sensitive to the scale of caliper variables. This can be used to
+        weight caliper variables.
 <p>
 <a name="saved_results"></a><b><u>Saved results</u></b>
 <p>
