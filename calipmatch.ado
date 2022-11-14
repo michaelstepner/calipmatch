@@ -168,16 +168,19 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	//	Outputs:
 	//		The values of "genvar" are filled with integers that describe each group of matched cases and controls.
 	//		- r(matchsuccess) is a Stata return matrix tabulating the number of cases successfully matched to {1, ..., maxmatch} controls
+	
 	real scalar matchgrp
 	matchgrp = st_varindex(genvar)
 	
 	real rowvector matchvars
 	matchvars = st_varindex(tokens(calipvars))
+	
 	real rowvector tolerance
 	tolerance = strtoreal(tokens(calipwidth))
 	
 	real scalar curmatch
 	curmatch = 0
+	
 	real scalar highestmatch
 	highestmatch = 0
 	
@@ -254,6 +257,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	
 	stata("return clear")
 	st_matrix("r(matchsuccess)",matchsuccess)
+	
 }
 
 real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, real scalar startobs, real scalar endobs) {
