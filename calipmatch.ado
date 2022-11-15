@@ -9,7 +9,6 @@ human-readable summary can be accessed at http://creativecommons.org/publicdomai
 */
 
 * Why did I include a formal license? Jeff Atwood gives good reasons: https://blog.codinghorror.com/pick-a-license-any-license/
-
 program define calipmatch, sortpreserve rclass
 	version 13.0
 	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) NOstandardize]
@@ -58,6 +57,7 @@ program define calipmatch, sortpreserve rclass
 	
 	* Sort into groups for caliper matching, randomizing order of cases and controls
 	tempvar rand
+	set seed 4585239 // TO REMOVE! 
 	gen float `rand'=runiform()
 	sort `touse' `exactmatch' `casevar' `rand'
 	
@@ -90,12 +90,18 @@ program define calipmatch, sortpreserve rclass
 	if r(no_matches)==0 {
 
 		if "`nostandardize'"=="" {
+			local i = 0
 			foreach var of varlist `calipermatch' {
 				tempvar std_`var'
-				qui egen `std_`var'' = std(`var') if `touse' == 1
+				local ++i  
+				local width : word `i' of `caliperwidth'
+				qui su `var' if `touse' `in'
+				qui gen `std_`var'' = (`var' - r(mean))/r(sd)
+				local std_`var'_width = `width'/r(sd)
 				local std_calipermatch `std_calipermatch' `std_`var''
+				local std_caliperwidth `std_caliperwidth' `std_`var'_width'
 			}
-			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'", "`std_calipermatch'")	
+			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`std_calipermatch'","`std_caliperwidth'")
 		}	
 
 		else {
@@ -145,8 +151,7 @@ set matastrict on
 
 mata:
 
-void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxmatch, string scalar calipvars, string scalar calipwidth,
-| string scalar std_calipvars) {
+void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxmatch, string scalar calipvars, string scalar calipwidth) {
 	// Objective:
 	//		Perform caliper matching using the specified caliper variables and caliper widths, matching each case observation to one or
 	//		many controls. Identify the matches within pre-specified groups, and store a variable containing integers that define a group
@@ -159,24 +164,23 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	//		- maxmatch: a positive integer indicating the maximum number of control obs to match to each case obs
 	//		- calipvars: a list of numeric variables for caliper matching
 	//		- calipwidth: a list of caliper widths, specifying the maximum distance between case and control variables in each calipvar
-	//		- std_calipvars (optional): a list of numeric variables for caliper matching, but standardized by the in-sample mean and s.d.
 	//
 	//	Outputs:
 	//		The values of "genvar" are filled with integers that describe each group of matched cases and controls.
 	//		- r(matchsuccess) is a Stata return matrix tabulating the number of cases successfully matched to {1, ..., maxmatch} controls
-
+	
 	real scalar matchgrp
 	matchgrp = st_varindex(genvar)
 	
 	real rowvector matchvars
 	matchvars = st_varindex(tokens(calipvars))
-
+	
 	real rowvector tolerance
 	tolerance = strtoreal(tokens(calipwidth))
 	
 	real scalar curmatch
 	curmatch = 0
-
+	
 	real scalar highestmatch
 	highestmatch = 0
 	
@@ -194,15 +198,6 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	real rowvector matchvals
 	real matrix controlvals
 	real matrix diffvals
-
-	if (args() > 5) {
-		real rowvector std_matchvars
-		std_matchvars = st_varindex(tokens(std_calipvars))
-		
-		real rowvector std_matchvals
-		real matrix std_controlvals
-		real matrix std_diffvals
-	}
 	
 	for (brow=1; brow<=rows(boundaries); brow++) {
 	
@@ -225,22 +220,16 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 					curmatch = _st_data(caseobs, matchgrp)
 				}
 				
-				// Store matchvar values for the case and for the controls that have not yet been matched, and calculate difference
+				// Store matchvar values for the case and for the controls that have not yet been matched
 				matchvals = st_data(caseobs, matchvars)
 				controlvals = st_data((boundaries[brow,1], boundaries[brow,2]), matchvars) :* editvalue(st_data((boundaries[brow,1], boundaries[brow,2]), matchgrp):==., 0, .)
+				
+				// Store difference in matchvar values if they are within tolerance
 				diffvals = (controlvals :- matchvals)
-
+				diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
+				
 				// Find closest control to match
-				if (args() >5) {
-					std_matchvals = st_data(caseobs, std_matchvars)
-					std_controlvals = st_data((boundaries[brow,1], boundaries[brow,2]), std_matchvars) :* editvalue(st_data((boundaries[brow,1], boundaries[brow,2]), matchgrp):==., 0, .)
-					std_diffvals = (std_controlvals :- std_matchvals) :* editvalue(abs(diffvals) :<= tolerance, 0, .)
-					minindex(rowsum(std_diffvals :^2, 1), 1, matchedcontrolindex, minties)
-				}
-				else {
-					diffvals = diffvals :* editvalue(abs(diffvals) :<= tolerance, 0, .)
-					minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
-				}
+				minindex(rowsum(diffvals :^2, 1), 1, matchedcontrolindex, minties)
 				
 				// If a match is found, store it
 				if (rows(matchedcontrolindex)>0) {
@@ -268,7 +257,7 @@ void _calipmatch(real matrix boundaries, string scalar genvar, real scalar maxma
 	
 	stata("return clear")
 	st_matrix("r(matchsuccess)",matchsuccess)
-
+	
 }
 
 real matrix find_group_boundaries(string scalar grpvars, string scalar casevar, real scalar startobs, real scalar endobs) {
