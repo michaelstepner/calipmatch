@@ -399,6 +399,7 @@ gen byte case=(_n<=200)
 
 gen byte income_percentile=ceil(runiform() * 100)
 gen byte age = 44 + ceil(runiform()*17)
+gen int days_over_44 = (age - 44)*365
 
 set seed 4585239
 set sortseed 789045789
@@ -412,7 +413,7 @@ set seed 4585239
 set sortseed 789045789
 
 test_calipmatch, gen(matchgroup_2) case(case) maxmatches(1) ///
-	calipermatch(income_percentile age) caliperwidth(5 3)
+	calipermatch(income_percentile days_over_44) caliperwidth(5 1095)
 
 *----------------------------------------------------------------------------
 
