@@ -57,7 +57,6 @@ program define calipmatch, sortpreserve rclass
 	
 	* Sort into groups for caliper matching, randomizing order of cases and controls
 	tempvar rand
-	set seed 4585239 // TO REMOVE! 
 	gen float `rand'=runiform()
 	sort `touse' `exactmatch' `casevar' `rand'
 	
