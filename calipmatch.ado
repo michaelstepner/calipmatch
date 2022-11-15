@@ -9,7 +9,6 @@ human-readable summary can be accessed at http://creativecommons.org/publicdomai
 */
 
 * Why did I include a formal license? Jeff Atwood gives good reasons: https://blog.codinghorror.com/pick-a-license-any-license/
-
 program define calipmatch, sortpreserve rclass
 	version 13.0
 	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) NOstandardize]
@@ -58,6 +57,7 @@ program define calipmatch, sortpreserve rclass
 	
 	* Sort into groups for caliper matching, randomizing order of cases and controls
 	tempvar rand
+	set seed 4585239 /// TO REMOVE! 
 	gen float `rand'=runiform()
 	sort `touse' `exactmatch' `casevar' `rand'
 	
