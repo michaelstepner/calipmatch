@@ -391,6 +391,10 @@ keep case income_percentile age_days
 * New dataset: two caliper matching variables, with different scales
 *============================================================================
 
+*----------------------------------------------------------------------------
+* Valid inputs, test performance of matching algorithm 
+*----------------------------------------------------------------------------
+
 * matches are scale invariant
 clear
 set obs 2000
@@ -421,6 +425,7 @@ gen match_diffs_std = abs(matchgroup_1 - matchgroup_2)
 su match_diffs_std, meanonly
 assert r(max) == 0
 
+* matches are scale dependent when nostandardize is specified
 set seed 4585239
 set sortseed 789045789
 
