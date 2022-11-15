@@ -415,6 +415,32 @@ set sortseed 789045789
 test_calipmatch, gen(matchgroup_2) case(case) maxmatches(1) ///
 	calipermatch(income_percentile days_over_44) caliperwidth(5 1095)
 
+drop casecount matched_case control matched_controls
+
+gen match_diffs_std = abs(matchgroup_1 - matchgroup_2)
+su match_diffs_std, meanonly
+assert r(max) == 0
+
+set seed 4585239
+set sortseed 789045789
+
+test_calipmatch, gen(matchgroup_3) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age) caliperwidth(5 3) nostandardize
+
+drop casecount matched_case control matched_controls
+
+set seed 4585239
+set sortseed 789045789
+
+test_calipmatch, gen(matchgroup_4) case(case) maxmatches(1) ///
+	calipermatch(income_percentile days_over_44) caliperwidth(5 1095) nostandardize
+
+gen match_diffs = abs(matchgroup_3 - matchgroup_4)
+su match_diffs, meanonly 
+assert r(max) != 0
+
+keep case income_percentile age 
+
 *----------------------------------------------------------------------------
 
 di "Successfully completed all tests."
