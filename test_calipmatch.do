@@ -388,9 +388,10 @@ assert matchgroup == . in 4/5
 keep case income_percentile age_days
 
 *============================================================================
-* New dataset: one caliper matching variable, with different scales
+* New dataset: two caliper matching variables, with different scales
 *============================================================================
 
+* matches are scale invariant
 clear
 set obs 2000
 
@@ -421,12 +422,12 @@ test_calipmatch, gen(matchgroup_4) case(case) maxmatches(1) ///
 
 keep case income_percentile age days_over_44 matchgroup_1 matchgroup_2 matchgroup_3 matchgroup_4
 
-gen std_diff = abs(matchgroup_1 - matchgroup_3)
-su std_diff, meanonly
+gen match_diffs_std = abs(matchgroup_1 - matchgroup_3)
+su match_diffs_std, meanonly
 assert r(max) == 0
 
-gen diff = abs(matchgroup_2 - matchgroup_4)
-su diff, meanonly 
+gen match_diffs = abs(matchgroup_2 - matchgroup_4)
+su match_diffs, meanonly 
 assert r(max) != 0
 
 keep case income_percentile age
