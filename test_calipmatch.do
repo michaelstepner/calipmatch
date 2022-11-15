@@ -388,14 +388,9 @@ assert matchgroup == . in 4/5
 keep case income_percentile age_days
 
 *============================================================================
-* New dataset: two caliper matching variables, with different scales
+* New dataset: two caliper matching variables, with scaling and a shift
 *============================================================================
 
-*----------------------------------------------------------------------------
-* Valid inputs, test performance of matching algorithm 
-*----------------------------------------------------------------------------
-
-* matches are scale invariant
 clear
 set obs 2000
 
@@ -405,6 +400,11 @@ gen byte income_percentile=ceil(runiform() * 100)
 gen byte age = 44 + ceil(runiform()*17)
 gen int days_over_44 = (age - 44)*365
 
+*----------------------------------------------------------------------------
+* Valid inputs, test performance of matching algorithm 
+*----------------------------------------------------------------------------
+
+* matches are scale and shift invariant
 set seed 4585239
 set sortseed 789045789
 
@@ -425,7 +425,7 @@ gen match_diffs_std = abs(matchgroup_1 - matchgroup_2)
 su match_diffs_std, meanonly
 assert r(max) == 0
 
-* matches are scale dependent when nostandardize is specified
+* matches are scale and shift dependent when nostandardize is specified
 set seed 4585239
 set sortseed 789045789
 
