@@ -26,7 +26,7 @@ The help file can be explored interactively in Stata using `help calipmatch`.
 <p>
         <b>calipmatch</b> [<i>if</i>] [<i>in</i>]<b>,</b> <b><u>gen</u></b><b>erate(</b><i>newvar</i><b>)</b> <b><u>case</u></b><b>var(</b><i>varname</i><b>)</b> <b><u>max</u></b><b>matches(</b><i>#</i><b>)</b>
                <b><u>caliperm</u></b><b>atch(</b><i>varlist</i><b>)</b> <b><u>caliperw</u></b><b>idth(</b><i>numlist</i><b>)</b> [<b><u>exactm</u></b><b>atch(</b>
-               <i>varlist</i><b>)</b><b><u> no</u></b><b>standardize</b>]
+               <i>varlist</i><b>)</b><b> nostandardize</b>]
 <p>
 <p>
     <i>options</i>                  Description
@@ -44,7 +44,7 @@ The help file can be explored interactively in Stata using `help calipmatch`.
 <p>
     Optional
       <b><u>exactm</u></b><b>atch(</b><i>varlist</i><b>)</b>    list of integer variables to match on exactly
-      <b><u>no</u></b><b>standardize</b>           distance using sum of squares; default is
+      <b>nostandardize</b>           distance using sum of squares; default is
                                standardized sum of squares
     -------------------------------------------------------------------------
 <p>
@@ -121,7 +121,7 @@ The help file can be explored interactively in Stata using `help calipmatch`.
         This enables speedy exact matching, by ensuring that all values are
         stored as precise integers.
 <p>
-    <b><u>no</u></b><b>standardize</b> calculates distance between cases and controls using the
+    <b>nostandardize</b> calculates distance between cases and controls using the
         sum of squared differences.  When specified, matches will be
         sensitive to the scale of caliper variables. This can be used to
         weight caliper variables.
