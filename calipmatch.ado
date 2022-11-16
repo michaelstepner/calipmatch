@@ -9,9 +9,10 @@ human-readable summary can be accessed at http://creativecommons.org/publicdomai
 */
 
 * Why did I include a formal license? Jeff Atwood gives good reasons: https://blog.codinghorror.com/pick-a-license-any-license/
+
 program define calipmatch, sortpreserve rclass
 	version 13.0
-	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) NOstandardize]
+	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) nostandardize]
 		
 	* Verify there are same number of caliper vars as caliper widths
 	if (`: word count `calipermatch'' != `: word count `caliperwidth'') {
@@ -89,25 +90,28 @@ program define calipmatch, sortpreserve rclass
 	if r(no_matches)==0 {
 
 		if "`nostandardize'"=="" {
+			* Create standardized caliper vars (subtract mean, divide by SD)
 			local i = 0
 			foreach var of varlist `calipermatch' {
+				local ++i
 				tempvar std_`var'
-				local ++i  
 				local width : word `i' of `caliperwidth'
-				qui su `var' if `touse' `in'
-				qui gen `std_`var'' = (`var' - r(mean))/r(sd)
-				local std_`var'_width = `width'/r(sd)
+
+				qui sum `var' in `=_N-`insample_total'+1'/`=_N'
+				qui gen `std_`var'' = (`var' - r(mean)) / r(sd) in `=_N-`insample_total'+1'/`=_N'
+
 				local std_calipermatch `std_calipermatch' `std_`var''
-				local std_caliperwidth `std_caliperwidth' `std_`var'_width'
+				local std_caliperwidth `std_caliperwidth' `=`width'/r(sd)'
 			}
+
 			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`std_calipermatch'","`std_caliperwidth'")
 		}	
-
 		else {
 			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`calipermatch'","`caliperwidth'")			
 		}
 
 		qui compress `generate'
+
 		matrix `case_matches' = r(matchsuccess)
 		matrix `case_matches' = (`cases_total' - `case_matches''* J(rowsof(`case_matches'),1,1)) \ `case_matches'
 	}
