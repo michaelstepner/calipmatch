@@ -94,14 +94,13 @@ program define calipmatch, sortpreserve rclass
 			local i = 0
 			foreach var of varlist `calipermatch' {
 				local ++i
-				tempvar std_`var'
-				local width : word `i' of `caliperwidth'
 
+				tempvar std_`var'
 				qui sum `var' in `=_N-`insample_total'+1'/`=_N'
 				qui gen `std_`var'' = (`var' - r(mean)) / r(sd) in `=_N-`insample_total'+1'/`=_N'
 
 				local std_calipermatch `std_calipermatch' `std_`var''
-				local std_caliperwidth `std_caliperwidth' `=`width'/r(sd)'
+				local std_caliperwidth `std_caliperwidth' `=`: word `i' of `caliperwidth'' / r(sd)'
 			}
 
 			mata: _calipmatch(boundaries,"`generate'",`maxmatches',"`std_calipermatch'","`std_caliperwidth'")
