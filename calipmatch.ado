@@ -12,7 +12,7 @@ human-readable summary can be accessed at http://creativecommons.org/publicdomai
 
 program define calipmatch, sortpreserve rclass
 	version 13.0
-	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) NOstandardize]
+	syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) nostandardize]
 		
 	* Verify there are same number of caliper vars as caliper widths
 	if (`: word count `calipermatch'' != `: word count `caliperwidth'') {
@@ -89,7 +89,7 @@ program define calipmatch, sortpreserve rclass
 	
 	if r(no_matches)==0 {
 
-		if "`nostandardize'"=="" {
+		if "`standardize'"=="" {
 			* Create standardized caliper vars (subtract mean, divide by SD)
 			local i = 0
 			foreach var of varlist `calipermatch' {

@@ -24,7 +24,7 @@ Create a variable indicating groups of matched cases and controls
 {opt max:matches(#)}
 {opth caliperm:atch(varlist)}
 {opth caliperw:idth(numlist)}
-[{opth exactm:atch(varlist)} {bf: {ul: no}standardize}]
+[{opth exactm:atch(varlist)} {bf: nostandardize}]
 
 
 {synoptset 23 tabbed}{...}
@@ -44,7 +44,7 @@ matching{p_end}
 
 {syntab :Optional}
 {synopt :{opth exactm:atch(varlist)}}list of integer variables to match on exactly{p_end}
-{synopt :{bf: {ul:no}standardize}} distance using sum of squares; default is standardized sum of squares {p_end}
+{synopt :{bf: nostandardize}} distance using sum of squares; default is standardized sum of squares {p_end}
 {synoptline}
 
 
@@ -116,7 +116,7 @@ matching variables, they must also have identical values for every exact matchin
 {it:int} or {it:long}. This enables speedy exact matching, by ensuring that
 all values are stored as precise integers.
 
-{phang}{bf: {ul:no}standardize} calculates distance between cases and controls using the sum of squared differences.
+{phang}{bf: nostandardize} calculates distance between cases and controls using the sum of squared differences.
 When specified, matches will be sensitive to the scale of caliper variables. This can be used to weight caliper variables.
 
 {marker saved_results}{...}
