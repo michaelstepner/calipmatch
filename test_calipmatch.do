@@ -9,7 +9,7 @@ program define test_calipmatch
 	if (_rc==0) {
 	
 		* Assign arguments to locals using the same syntax as calipmatch
-		syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist)]
+		syntax [if] [in], GENerate(name) CASEvar(varname numeric) MAXmatches(numlist integer >0 max=1) CALIPERMatch(varlist numeric) CALIPERWidth(numlist >0) [EXACTmatch(varlist) nostandardize]
 	
 		* Store returned objects
 		local cases_total = r(cases_total)
@@ -345,29 +345,106 @@ replace income_percentile = 52 in 3
 replace income_percentile = 41 in 4
 replace income_percentile = 55 in 5
 
-gen byte age = 40
-replace age = 47 in 2
-replace age = 55 in 4
+gen int age_days = 14600
+replace age_days = 17155 in 2
+replace age_days = 20075 in 4
+ 
+*----------------------------------------------------------------------------
+* Valid inputs, test performance of matching algorithm 
+*----------------------------------------------------------------------------
 
-gen float sse = (income_percentile - income_percentile[1])^2 + (age - age[1])^2
+* matches minimize sum of normalized squares
+egen std_income_percentile = std(income_percentile)
+egen std_age_days = std(age_days)
 
+gen float std_sse = (std_income_percentile - std_income_percentile[1])^2 + (std_age_days - std_age_days[1])^2
 list 
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age_days) caliperwidth(100 36500)
+
+sum std_sse if case==0, meanonly
+assert cond(_n==2, std_sse==r(min), std_sse!=r(min))  // test that obs 2 is global min
+
+assert matchgroup == 1 in 2  // test that obs 2 is matched
+assert matchgroup == . in 3/5
+
+keep case income_percentile age_days
+
+* matches minimize sum of squares when nostandardize is specified
+gen float sse = (income_percentile - income_percentile[1])^2 + (age_days - age_days[1])^2
+list 
+
+test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age_days) caliperwidth(100 36500) nostandardize
+
+sum sse if case==0, meanonly
+assert cond(_n==3, sse==r(min), sse!=r(min))  // test that obs 3 is global min
+
+assert matchgroup == 1 in 3  // test that obs 3 is matched
+assert matchgroup == . in 2
+assert matchgroup == . in 4/5
+
+keep case income_percentile age_days
+
+*============================================================================
+* New dataset: two caliper matching variables, with scaling and a shift
+*============================================================================
+
+clear
+set obs 2000
+
+gen byte case=(_n<=200)
+
+gen byte income_percentile=ceil(runiform() * 100)
+gen byte age = 44 + ceil(runiform()*17)
+gen int days_over_44 = (age - 44)*365
 
 *----------------------------------------------------------------------------
 * Valid inputs, test performance of matching algorithm 
 *----------------------------------------------------------------------------
 
-* matches minimize sum of squares
-test_calipmatch, gen(matchgroup) case(case) maxmatches(1) ///
-	calipermatch(income_percentile age) caliperwidth(100 100) 
+* matches are scale and shift invariant
+set seed 4585239
+set sortseed 789045789
 
-sum sse if case==0, meanonly
-assert cond(_n==2, sse==r(min), sse!=r(min))  // test that obs 2 is global min
+test_calipmatch, gen(matchgroup_1) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age) caliperwidth(5 3) 
 
-assert matchgroup == 1 in 2  // test that obs 2 is matched
-assert matchgroup == . in 3/5
+drop casecount matched_case control matched_controls
 
-keep case income_percentile age
+set seed 4585239
+set sortseed 789045789
+
+test_calipmatch, gen(matchgroup_2) case(case) maxmatches(1) ///
+	calipermatch(income_percentile days_over_44) caliperwidth(5 1095)
+
+drop casecount matched_case control matched_controls
+
+gen match_diffs_std = abs(matchgroup_1 - matchgroup_2)
+su match_diffs_std, meanonly
+assert r(max) == 0
+
+* matches are scale and shift dependent when nostandardize is specified
+set seed 4585239
+set sortseed 789045789
+
+test_calipmatch, gen(matchgroup_3) case(case) maxmatches(1) ///
+	calipermatch(income_percentile age) caliperwidth(5 3) nostandardize
+
+drop casecount matched_case control matched_controls
+
+set seed 4585239
+set sortseed 789045789
+
+test_calipmatch, gen(matchgroup_4) case(case) maxmatches(1) ///
+	calipermatch(income_percentile days_over_44) caliperwidth(5 1095) nostandardize
+
+gen match_diffs = abs(matchgroup_3 - matchgroup_4)
+su match_diffs, meanonly 
+assert r(max) != 0
+
+keep case income_percentile age 
 
 *----------------------------------------------------------------------------
 
